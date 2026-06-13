@@ -3,7 +3,7 @@
 # bootstrap.sh — AI CLI Pult'ni BITTA BUYRUQ bilan o'rnatish.
 #
 # Foydalanish (o'quvchilar uchun):
-#   curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/ai-cli/main/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 #
 # Nima qiladi:
 #   1. git va curl mavjudligini tekshiradi.
@@ -11,14 +11,14 @@
 #   3. install.sh'ni ishga tushiradi.
 #
 # Sozlanadigan muhit o'zgaruvchilari:
-#   AI_CLI_REPO   — repozitoriya URL'i (standart: SUNNATBEE/ai-cli)
+#   AI_CLI_REPO   — repozitoriya URL'i (standart: SUNNATBEE/sunnatbeeCLI)
 #   AI_CLI_HOME   — o'rnatish katalogi (standart: ~/.ai-cli)
 #
 # Exit kodlari: 0 — muvaffaqiyat, 1 — xato, 127 — kerakli vosita yo'q.
 
 set -Eeuo pipefail
 
-REPO="${AI_CLI_REPO:-https://github.com/SUNNATBEE/ai-cli.git}"
+REPO="${AI_CLI_REPO:-https://github.com/SUNNATBEE/sunnatbeeCLI.git}"
 DEST="${AI_CLI_HOME:-$HOME/.ai-cli}"
 
 info()  { printf '\033[0;34m[i]\033[0m %s\n' "$*" >&2; }

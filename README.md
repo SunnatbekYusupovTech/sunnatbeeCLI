@@ -74,13 +74,13 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 ## 🚀 Bir buyruq bilan o'rnatish (One-Click)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/ai-cli/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
 <sub>`wget` ishlatuvchilar uchun:</sub>
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/SUNNATBEE/ai-cli/main/bootstrap.sh | bash
+wget -qO- https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
 Shu bitta buyruq quyidagilarni avtomatik bajaradi:

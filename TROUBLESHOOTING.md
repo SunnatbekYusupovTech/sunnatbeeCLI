@@ -81,7 +81,7 @@ bash ~/.ai-cli/install.sh
 **Yechim:** Bu muammo **yangi versiyada tuzatilgan** — `ai` endi har ishga tushganda npm/pip papkalarini avtomatik qo'shadi. Eski o'rnatmani yangilang:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/ai-cli/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
 So'ng terminalni qayta oching.
@@ -154,7 +154,7 @@ Eng ko'p uchraydigan **3 ta sabab** va yechimi:
 
 ```bash
 rm -rf ~/.ai-cli
-curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/ai-cli/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
 ---
@@ -179,6 +179,6 @@ winget install fzf        # Windows
 
 ### Yechim topilmadimi?
 
-[**Yangi muammo (issue) oching**](https://github.com/SUNNATBEE/ai-cli/issues) — xato matnini va `ai --doctor` natijasini ilova qiling.
+[**Yangi muammo (issue) oching**](https://github.com/SUNNATBEE/sunnatbeeCLI/issues) — xato matnini va `ai --doctor` natijasini ilova qiling.
 
 </div>
