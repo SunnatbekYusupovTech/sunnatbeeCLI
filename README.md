@@ -114,9 +114,16 @@ O'rnatishdan oldin kompyuteringizda quyidagilar bo'lishi kerak:
 > (Next → Next → Finish), so'ng **"Git Bash"** dasturini oching va quyidagi
 > buyruqlarni **o'sha oynada** yozing — oddiy `cmd` yoki PowerShell'da emas.
 
-### 2️⃣-qadam — Bitta buyruq bilan o'rnatish (tavsiya etiladi)
+### 2️⃣-qadam — O'z terminalingizga mos buyruqni tanlang
 
-Terminal (yoki Git Bash) oynasiga shuni nusxalab, **Enter** bosing:
+Qaysi dasturda ishlayotganingizga qarab quyidagilardan **birini** nusxalab,
+**Enter** bosing. (Hamma yo'l bir xil natijaga olib keladi.)
+
+> 🧠 **Qisqacha qoida:** yadro `bash` skripti. Shuning uchun Linux/macOS'da to'g'ridan-to'g'ri,
+> Windows'da esa **Git Bash** orqali ishlaydi. PowerShell va cmd faqat
+> `bash`ni chaqiradi — shu sabab ularda ham Git Bash o'rnatilgan bo'lishi kerak.
+
+#### 🐧 Linux / 🍎 macOS — `bash` yoki `zsh`
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
@@ -128,7 +135,36 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 wget -qO- https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
-Shu bitta buyruq hamma narsani **avtomatik** bajaradi:
+#### 🪟 Windows — Git Bash *(eng oson, tavsiya etiladi)*
+
+**"Git Bash"** dasturini oching va xuddi yuqoridagi buyruqni yozing:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
+```
+
+#### 🪟 Windows — PowerShell
+
+> ⚠️ PowerShell'da `curl` boshqa narsa (Invoke-WebRequest). Shuning uchun
+> o'rnatishni `bash` orqali chaqiramiz:
+
+```powershell
+bash -c "curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash"
+```
+
+#### 🪟 Windows — cmd.exe (Command Prompt)
+
+```bat
+bash -c "curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash"
+```
+
+> 💡 **Windows'da `ai` buyrug'ini ishlatish:** o'rnatishdan keyin `ai` Git Bash'da
+> darrov ishlaydi. PowerShell/cmd'da ham ishlashi uchun `%USERPROFILE%\.local\bin`
+> papkasini Windows **PATH**'iga qo'shing (yoki shunchaki Git Bash'dan foydalaning).
+
+---
+
+Yuqoridagi buyruq qaysi terminalda bo'lsa ham, hamma narsani **avtomatik** bajaradi:
 
 1. 📥 Loyihani `~/.ai-cli` papkasiga yuklab oladi
 2. 🔍 Kerakli dasturlarni tekshiradi (`fzf` ixtiyoriy)
