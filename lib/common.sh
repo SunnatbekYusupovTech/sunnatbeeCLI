@@ -10,8 +10,26 @@
 #   • die()  — xabar chiqarib, berilgan exit-code bilan to'xtaydi
 #   • require_cmd() — kerakli buyruq mavjudligini tekshiradi
 
-# --- Ranglar (interaktiv terminalda yoqiladi; NO_COLOR'ni hurmat qiladi) ---
-if [[ -z "${NO_COLOR:-}" ]] && { [[ -t 1 ]] || [[ -t 2 ]]; }; then
+# --- Rang/animatsiya yoqilishini aniqlash --------------------------------
+# Quyidagi tartibda hal qilinadi:
+#   1) NO_COLOR o'rnatilgan bo'lsa            → o'chiq (standart hurmat)
+#   2) FORCE_COLOR / CLICOLOR_FORCE bo'lsa    → MAJBURAN yoniq
+#   3) stdout yoki stderr terminal (tty) bo'lsa → yoniq
+#   4) Windows zamonaviy terminal belgilari   → yoniq (Windows Terminal/ConEmu/ANSICON)
+#   5) aks holda                               → o'chiq (faylga/quvurga yozilmoqda)
+if [[ -n "${NO_COLOR:-}" ]]; then
+  UI_TTY=0
+elif [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" ]]; then
+  UI_TTY=1
+elif [[ -t 1 || -t 2 ]]; then
+  UI_TTY=1
+elif [[ -n "${WT_SESSION:-}" || -n "${ANSICON:-}" || "${ConEmuANSI:-}" == "ON" || -n "${TERM_PROGRAM:-}" ]]; then
+  UI_TTY=1
+else
+  UI_TTY=0
+fi
+
+if [[ "$UI_TTY" -eq 1 ]]; then
   C_RESET=$'\033[0m'
   C_RED=$'\033[31m'
   C_GREEN=$'\033[32m'
@@ -33,8 +51,7 @@ else
   C_GRAY='' C_DIM='' C_BOLD='' C_G1='' C_G2='' C_G3='' C_G4='' C_TITLE=''
 fi
 
-# UI bayroqlari: animatsiya faqat interaktiv terminalda va CI'dan tashqarida.
-if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]; then UI_TTY=1; else UI_TTY=0; fi
+# Animatsiya: rang yoniq bo'lsa va aniq o'chirilmagan bo'lsa.
 if [[ "$UI_TTY" -eq 1 && -z "${AI_NO_ANIM:-}" && -z "${CI:-}" ]]; then AI_ANIM=1; else AI_ANIM=0; fi
 # Unicode (braille/box) qo'llab-quvvatlanadimi? Noma'lum bo'lsa — ha deb hisoblaymiz.
 case "${LC_ALL:-${LC_CTYPE:-${LANG:-UTF-8}}}" in
