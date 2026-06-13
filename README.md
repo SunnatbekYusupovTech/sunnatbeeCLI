@@ -10,7 +10,7 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 [![Shell](https://img.shields.io/badge/shell-bash%20%7C%20zsh-1f425f.svg?logo=gnu-bash&logoColor=white)](#)
 [![Powered by fzf](https://img.shields.io/badge/powered%20by-fzf-00b894.svg)](https://github.com/junegunn/fzf)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![One-line install](https://img.shields.io/badge/install-one--line-ff69b4.svg)](#-bir-buyruq-bilan-örnatish-one-click)
+[![One-line install](https://img.shields.io/badge/install-one--line-ff69b4.svg)](#-ornatish-installation)
 
 </div>
 
@@ -71,43 +71,84 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 
 ---
 
-## 🚀 Bir buyruq bilan o'rnatish (One-Click)
+## 🚀 O'rnatish (Installation)
+
+O'rnatish atigi **bir necha daqiqa**. Quyidagi 3 qadamni ketma-ket bajaring.
+
+### 1️⃣-qadam — Kerakli dasturlar (Prerequisites)
+
+O'rnatishdan oldin kompyuteringizda quyidagilar bo'lishi kerak:
+
+| Dastur | Majburiymi? | Nima uchun | Qanday o'rnatish |
+|---|:---:|---|---|
+| **git** | ✅ Ha | Loyihani yuklab olish uchun | [git-scm.com/downloads](https://git-scm.com/downloads) |
+| **curl** yoki **wget** | ✅ Ha | O'rnatuvchini yuklab olish | macOS/Linux'da odatda bor; Windows'da Git Bash bilan keladi |
+| **fzf** | ⭐ Ixtiyoriy | Chiroyli izlanadigan menyu | Yo'q bo'lsa ham ishlaydi (raqamli menyu) |
+| **Node.js / Python** | ❌ Yo'q | Faqat tanlangan AI CLI uchun | `ai` keraklisini o'zi taklif qiladi |
+
+> 🪟 **Windows foydalanuvchilari diqqat!** Bu vosita **Git Bash** ichida ishlaydi.
+> Avval [**Git for Windows**](https://git-scm.com/download/win) ni o'rnating
+> (Next → Next → Finish), so'ng **"Git Bash"** dasturini oching va quyidagi
+> buyruqlarni **o'sha oynada** yozing — oddiy `cmd` yoki PowerShell'da emas.
+
+### 2️⃣-qadam — Bitta buyruq bilan o'rnatish (tavsiya etiladi)
+
+Terminal (yoki Git Bash) oynasiga shuni nusxalab, **Enter** bosing:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
-<sub>`wget` ishlatuvchilar uchun:</sub>
+<sub>`curl` yo'q bo'lsa, `wget` bilan:</sub>
 
 ```bash
 wget -qO- https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
-Shu bitta buyruq quyidagilarni avtomatik bajaradi:
+Shu bitta buyruq hamma narsani **avtomatik** bajaradi:
 
-1. 📥 Repozitoriyani `~/.ai-cli`'ga klonlaydi
-2. 🔍 Kerakli vositalarni tekshiradi (`fzf` ixtiyoriy)
-3. 💾 `~/.bashrc` / `~/.zshrc` faylini **zaxiralaydi**
-4. 🔗 `ai` buyrug'ini `~/.local/bin`'ga o'rnatadi (+ Windows wrapper'lar)
-5. ⚙️ Agentlar ro'yxatini `~/.config/ai-cli/`'ga ko'chiradi
-6. ⌨️ Shell completion va `PATH` sozlamalarini qo'shadi
-
-So'ngra terminalni qayta oching (yoki `source ~/.bashrc`) — va tayyor:
-
-```bash
-ai
-```
-
-> ✅ **Majburiy:** `git` va `curl`/`wget`.
-> 🪟 **Windows'da:** [Git for Windows](https://git-scm.com/download/win) (Git Bash bilan keladi).
-> ⭐ **Ixtiyoriy:** [`fzf`](https://github.com/junegunn/fzf) — chiroyli izlanadigan menyu uchun.
-> Yo'q bo'lsa ham `ai` ishlaydi (oddiy raqamli menyuga o'tadi).
->
-> 📌 Agar repozitoriyangizning standart branchi `main` emas, `master` bo'lsa —
-> URL'dagi `main` so'zini `master`'ga almashtiring.
+1. 📥 Loyihani `~/.ai-cli` papkasiga yuklab oladi
+2. 🔍 Kerakli dasturlarni tekshiradi (`fzf` ixtiyoriy)
+3. 💾 `~/.bashrc` / `~/.zshrc` faylini **zaxiralaydi** (xavfsizlik uchun)
+4. 🔗 `ai` buyrug'ini o'rnatadi (+ Windows uchun `ai.cmd` / `ai.ps1`)
+5. ⚙️ Agentlar ro'yxatini `~/.config/ai-cli/` ga ko'chiradi
+6. ⌨️ `PATH` va avtomatik to'ldirishni (completion) sozlaydi
 
 <details>
-<summary><b>fzf'ni qanday o'rnatish kerak? (ixtiyoriy)</b></summary>
+<summary><b>🛠️ Variant B — Qo'lda o'rnatish (git clone bilan)</b></summary>
+
+Avtomatik buyruqni ishlatishni xohlamasangiz:
+
+```bash
+git clone https://github.com/SUNNATBEE/sunnatbeeCLI.git ~/.ai-cli
+bash ~/.ai-cli/install.sh
+```
+
+</details>
+
+### 3️⃣-qadam — Terminalni qayta oching va tekshiring
+
+O'rnatish tugagach, **terminalni butunlay yopib, qaytadan oching**
+(yoki `source ~/.bashrc`). So'ng tekshiring:
+
+```bash
+ai --doctor     # muhit to'g'ri sozlanganini tekshiradi
+ai              # menyuni ochadi 🎉
+```
+
+✅ Menyu ochildimi? Tabriklaymiz — tayyor! Endi istalgan AI CLI'ni tanlang.
+
+---
+
+> 📌 **Eslatma:** repozitoriyaning standart branchi `master` bo'lsa, URL'dagi
+> `main` so'zini `master` ga almashtiring.
+>
+> 🩺 **Muammo chiqdimi?** Avval **`ai --doctor`** ni ishga tushiring — u muammoni
+> topib, oddiy tilda nima qilish kerakligini aytadi. To'liq qo'llanma:
+> [**TROUBLESHOOTING.md**](./TROUBLESHOOTING.md).
+
+<details>
+<summary><b>fzf'ni qanday o'rnatish kerak? (ixtiyoriy, lekin tavsiya etiladi)</b></summary>
 
 ```bash
 brew install fzf            # macOS
@@ -117,10 +158,6 @@ winget install fzf          # Windows
 # Boshqalar: https://github.com/junegunn/fzf#installation
 ```
 </details>
-
-> 🩺 Biror narsa ishlamayaptimi? Avval **`ai --doctor`** ni ishga tushiring —
-> u muammoni topib, oddiy tilda nima qilish kerakligini aytadi.
-> To'liq qo'llanma: [**TROUBLESHOOTING.md**](./TROUBLESHOOTING.md).
 
 ---
 
