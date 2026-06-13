@@ -119,9 +119,10 @@ O'rnatishdan oldin kompyuteringizda quyidagilar bo'lishi kerak:
 Qaysi dasturda ishlayotganingizga qarab quyidagilardan **birini** nusxalab,
 **Enter** bosing. (Hamma yo'l bir xil natijaga olib keladi.)
 
-> 🧠 **Qisqacha qoida:** yadro `bash` skripti. Shuning uchun Linux/macOS'da to'g'ridan-to'g'ri,
-> Windows'da esa **Git Bash** orqali ishlaydi. PowerShell va cmd faqat
-> `bash`ni chaqiradi — shu sabab ularda ham Git Bash o'rnatilgan bo'lishi kerak.
+> 🧠 **Qisqacha qoida:** yadro `bash` skripti. Linux/macOS'da to'g'ridan-to'g'ri,
+> Windows'da esa **Git Bash** oynasida ishlaydi. ⚠️ Oddiy `cmd` yoki PowerShell'dan
+> foydalanmang — ularda `bash` PATH'da bo'lmaganligi sababli `"bash" topilmadi`
+> xatosi chiqadi. **Git Bash dasturini oching.**
 
 #### 🐧 Linux / 🍎 macOS — `bash` yoki `zsh`
 
@@ -135,28 +136,17 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 wget -qO- https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
-#### 🪟 Windows — Git Bash *(eng oson, tavsiya etiladi)*
+#### 🪟 Windows — Git Bash
 
-**"Git Bash"** dasturini oching va xuddi yuqoridagi buyruqni yozing:
+Start menyudan **"Git Bash"** dasturini oching (oddiy `cmd`/PowerShell EMAS) va
+xuddi yuqoridagi buyruqni yozing:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
 ```
 
-#### 🪟 Windows — PowerShell
-
-> ⚠️ PowerShell'da `curl` boshqa narsa (Invoke-WebRequest). Shuning uchun
-> o'rnatishni `bash` orqali chaqiramiz:
-
-```powershell
-bash -c "curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash"
-```
-
-#### 🪟 Windows — cmd.exe (Command Prompt)
-
-```bat
-bash -c "curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash"
-```
+> ❓ **"bash" topilmadi degan xato?** Demak siz `cmd` yoki PowerShell'dasiz.
+> Ularni yoping va **Git Bash** dasturini oching — buyruq o'sha oynada ishlaydi.
 
 > 💡 **Windows'da `ai` buyrug'ini ishlatish:** o'rnatishdan keyin `ai` Git Bash'da
 > darrov ishlaydi. PowerShell/cmd'da ham ishlashi uchun `%USERPROFILE%\.local\bin`
