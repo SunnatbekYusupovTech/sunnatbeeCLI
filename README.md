@@ -71,9 +71,32 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 
 ---
 
+## 🎬 Video qo'llanma (O'quvchilar uchun)
+
+> 🎥 O'rnatish va foydalanishning **to'liq jarayonini** video orqali ko'rib
+> o'rganing — ayniqsa birinchi marta o'rnatayotgan bo'lsangiz tavsiya etiladi.
+
+<div align="center">
+
+<!--
+  📌 VIDEO HAVOLASINI SHU YERGA QO'YING.
+  Havola tayyor bo'lganda quyidagi qatordagi "#" o'rniga to'liq manzilni yozing
+  (masalan: https://youtu.be/XXXXXXXX yoki Telegram post havolasi).
+-->
+[![Video qo'llanma](https://img.shields.io/badge/▶_Video_qo'llanma-tez_orada-lightgrey?style=for-the-badge&logo=youtube&logoColor=white)](#)
+
+*📌 Video havolasi tez orada shu yerga qo'shiladi.*
+
+</div>
+
+---
+
 ## 🚀 O'rnatish (Installation)
 
 O'rnatish atigi **bir necha daqiqa**. Quyidagi 3 qadamni ketma-ket bajaring.
+
+> 💡 Pastdagi yozma yo'riqnoma bilan birga yuqoridagi **video qo'llanma**ni ham
+> ko'rsangiz, jarayon yanada oson kechadi.
 
 ### 1️⃣-qadam — Kerakli dasturlar (Prerequisites)
 
