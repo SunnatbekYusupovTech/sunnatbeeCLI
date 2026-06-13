@@ -1,0 +1,13 @@
+# Aider artefaktlari
+.aider*
+
+# Shell rc zaxiralari (test paytida yaratilishi mumkin)
+*.aipult-backup-*
+
+# OS / muharrir
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

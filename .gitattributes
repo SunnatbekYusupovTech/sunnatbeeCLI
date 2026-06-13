@@ -1,0 +1,8 @@
+# Shell skriptlari HAR DOIM LF qator-tugashi bilan saqlanadi.
+# (CRLF bo'lsa Linux/macOS'da "#!/usr/bin/env bash\r" xatosi yuzaga keladi.)
+*.sh        text eol=lf
+*.conf      text eol=lf
+
+# Hujjatlar
+*.md        text
+LICENSE     text
