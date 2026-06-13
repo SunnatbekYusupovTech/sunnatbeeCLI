@@ -27,7 +27,9 @@ fi
 trap 'die 1 "O\047chirish xato bilan to\047xtadi (qator: $LINENO)."' ERR
 
 readonly USER_CONFIG_DIR="$HOME/.config/ai-cli"
-readonly CMD_LINK="$HOME/.local/bin/ai"
+readonly BIN_DIR="$HOME/.local/bin"
+readonly CMD_LINK="$BIN_DIR/ai"
+readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ai-cli"
 readonly MARK_BEGIN="# >>> ai-cli (boshlanish) >>>"
 readonly MARK_END="# <<< ai-cli (oxir) <<<"
 
@@ -55,9 +57,17 @@ main() {
   remove_block_from "$HOME/.zshrc"
   remove_block_from "$HOME/.profile"
 
-  if [[ -L "$CMD_LINK" || -e "$CMD_LINK" ]]; then
-    rm -f -- "$CMD_LINK"
-    log_success "Buyruq olib tashlandi: $CMD_LINK"
+  local f
+  for f in "$CMD_LINK" "$CMD_LINK.cmd" "$CMD_LINK.ps1"; do
+    if [[ -L "$f" || -e "$f" ]]; then
+      rm -f -- "$f"
+      log_success "Olib tashlandi: $f"
+    fi
+  done
+
+  if [[ -d "$STATE_DIR" ]]; then
+    rm -rf -- "$STATE_DIR"
+    log_success "Holat fayllari olib tashlandi: $STATE_DIR"
   fi
 
   if [[ -d "$USER_CONFIG_DIR" ]]; then

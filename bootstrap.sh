@@ -29,20 +29,49 @@ die()   { local c="$1"; shift; err "$*"; exit "$c"; }
 trap 'die 1 "Bootstrap xato bilan to\047xtadi (qator: $LINENO)."' ERR
 
 # --- 1) Kerakli vositalar -------------------------------------------------
-command -v git  >/dev/null 2>&1 || die 127 "git topilmadi. Iltimos, git'ni o'rnating."
-command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 \
-  || die 127 "curl yoki wget topilmadi. Iltimos, birortasini o'rnating."
+if ! command -v git >/dev/null 2>&1; then
+  err "──────────────────────────────────────────────"
+  err "❌ \"git\" topilmadi — u loyihani yuklab olishga kerak."
+  err "👉 https://git-scm.com/downloads saytidan yuklab olib o'rnating."
+  err "   So'ng terminalni qayta oching va shu buyruqni takrorlang."
+  err "──────────────────────────────────────────────"
+  exit 127
+fi
+if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+  err "──────────────────────────────────────────────"
+  err "❌ \"curl\" ham, \"wget\" ham topilmadi — fayl yuklash uchun biri kerak."
+  err "👉 Ubuntu/Debian: \"sudo apt install curl\"  ·  macOS'da curl oldindan bor."
+  err "──────────────────────────────────────────────"
+  exit 127
+fi
 
-printf '\n\033[1m🤖 AI CLI Pult — bitta buyruq bilan o\047rnatish\033[0m\n\n'
+if [[ -t 2 && -z "${NO_COLOR:-}" ]]; then
+  printf '\n  \033[38;5;51m━━━━━━━━━━━━━━━\033[38;5;39m━━━━━━━━━━━━━━━\033[38;5;201m━━━━━━━━━━━━━━━━\033[0m\n' >&2
+  printf '  \033[1m🤖  \033[38;5;87mAI CLI PULT\033[0m\n' >&2
+  printf '  \033[90mbitta buyruq bilan o'\''rnatish\033[0m\n' >&2
+  printf '  \033[38;5;201m━━━━━━━━━━━━━━━\033[38;5;39m━━━━━━━━━━━━━━━\033[38;5;51m━━━━━━━━━━━━━━━━\033[0m\n\n' >&2
+else
+  printf '\n🤖 AI CLI Pult — bitta buyruq bilan o\047rnatish\n\n' >&2
+fi
 
 # --- 2) Klonlash yoki yangilash -------------------------------------------
 if [[ -d "$DEST/.git" ]]; then
   info "Mavjud o'rnatma topildi, yangilanmoqda: $DEST"
-  git -C "$DEST" pull --ff-only --quiet || die 1 "Yangilash muvaffaqiyatsiz: $DEST"
+  if ! git -C "$DEST" pull --ff-only --quiet; then
+    err "❌ Yangilab bo'lmadi: $DEST"
+    err "👉 Internet ulanishini tekshiring yoki shu papkani o'chirib qayta urinib ko'ring:"
+    err "   rm -rf \"$DEST\"   (so'ng buyruqni qaytadan ishga tushiring)"
+    exit 1
+  fi
   ok "Yangilandi."
 else
   info "Repozitoriya klonlanmoqda: $REPO"
-  git clone --depth 1 "$REPO" "$DEST" --quiet || die 1 "Klonlash muvaffaqiyatsiz: $REPO"
+  if ! git clone --depth 1 "$REPO" "$DEST" --quiet; then
+    err "❌ Yuklab bo'lmadi: $REPO"
+    err "👉 Eng ko'p sabab — internet yo'q yoki manzil noto'g'ri."
+    err "   Wi-Fi'ni tekshiring va biroz kutib qaytadan urinib ko'ring."
+    exit 1
+  fi
   ok "Klonlandi: $DEST"
 fi
 

@@ -32,10 +32,27 @@ else
   die() { local c="$1"; shift; log_error "$*"; exit "$c"; }
 fi
 
-trap 'die 1 "O\047rnatish xato bilan to\047xtadi (qator: $LINENO)."' ERR
+on_install_error() {
+  local line="$1"
+  declare -f show_cursor >/dev/null 2>&1 && show_cursor
+  if declare -f panel >/dev/null 2>&1; then
+    panel "❌ O'rnatishda kutilmagan xatolik" \
+      "O'rnatish $line-qatorda to'xtadi." \
+      "" \
+      "Quyidagilarni tekshiring:" \
+      "  • 🌐 Internet ulanishi bormi?" \
+      "  • 📁 \$HOME papkangizga yozish ruxsati bormi?" \
+      "  • 🧩 \"git\", \"curl\", \"fzf\" o'rnatilganmi? (\"ai --doctor\")" \
+      "" \
+      "Muammo davom etsa, yuqoridagi xato matnini nusxalab yordam so'rang."
+  fi
+  exit 1
+}
+trap 'on_install_error "$LINENO"' ERR
 
 readonly BIN_SRC="$INSTALL_DIR/bin/ai-selector.sh"
 readonly CONFIG_SRC="$INSTALL_DIR/config/agents.conf"
+readonly COMPLETION_SRC="$INSTALL_DIR/completions/ai.bash"
 readonly USER_CONFIG_DIR="$HOME/.config/ai-cli"
 readonly USER_CONFIG="$USER_CONFIG_DIR/agents.conf"
 readonly BIN_DIR="$HOME/.local/bin"
@@ -50,16 +67,22 @@ check_prerequisites() {
   [[ -r "$BIN_SRC" ]]    || die 1 "Asosiy skript topilmadi: $BIN_SRC"
   [[ -r "$CONFIG_SRC" ]] || die 1 "Konfiguratsiya topilmadi: $CONFIG_SRC"
 
+  # fzf MAJBURIY emas — bo'lmasa `ai` oddiy raqamli menyuga o'tadi. Shu sababli
+  # uni ogohlantirish sifatida ko'rsatamiz, o'rnatishni to'xtatmaymiz.
   if ! command -v fzf >/dev/null 2>&1; then
-    log_error "fzf o'rnatilmagan — bu vosita ishlashi uchun majburiy."
-    log_error "O'rnatish:"
-    log_error "  • macOS:         brew install fzf"
-    log_error "  • Debian/Ubuntu: sudo apt install fzf"
-    log_error "  • Arch:          sudo pacman -S fzf"
-    log_error "  • Boshqalar:     https://github.com/junegunn/fzf#installation"
-    die 127 "fzf topilmadi. O'rnatib, install.sh'ni qayta ishga tushiring."
+    if declare -f panel >/dev/null 2>&1; then
+      panel "ℹ️  \"fzf\" topilmadi — ixtiyoriy, lekin tavsiya etiladi" \
+        "fzf — terminalda ro'yxatdan oson tanlash uchun kichik dastur." \
+        "U bo'lmasa ham \"ai\" ishlaydi (oddiy raqamli menyu bilan)." \
+        "Chiroyli, izlanadigan menyu uchun keyinroq o'rnatib qo'ying:" \
+        "" \
+        "👉 $(tool_hint fzf)"
+    else
+      log_warn "fzf topilmadi (ixtiyoriy). O'rnatish: https://github.com/junegunn/fzf#installation"
+    fi
+  else
+    log_success "fzf topildi: $(command -v fzf)"
   fi
-  log_success "fzf topildi: $(command -v fzf)"
 }
 
 detect_shell_rc() {
@@ -96,6 +119,55 @@ exec bash "$BIN_SRC" "\$@"
 EOF
   chmod +x "$CMD_LINK"
   log_success "'$CMD_NAME' buyrug'i o'rnatildi: $CMD_LINK -> $BIN_SRC"
+
+  # Windows (cmd.exe / PowerShell) uchun wrapper'lar — `ai` to'g'ridan-to'g'ri
+  # shu qobiqlardan ham ishlasin. Git Bash'ni PATH'dan yoki odatiy o'rnatish
+  # joylaridan topadi (PATH'da bo'lmasa ham). cmd fayli CRLF bilan yoziladi.
+  {
+    printf '%s\n' "@echo off"
+    printf '%s\n' "setlocal"
+    printf '%s\n' "set \"AI_SH=$BIN_SRC\""
+    cat <<'CMDEOF'
+for %%I in (bash.exe) do if not "%%~$PATH:I"=="" (
+  bash "%AI_SH%" %*
+  exit /b %errorlevel%
+)
+for %%P in (
+  "%ProgramFiles%\Git\bin\bash.exe"
+  "%ProgramFiles(x86)%\Git\bin\bash.exe"
+  "%LocalAppData%\Programs\Git\bin\bash.exe"
+) do if exist "%%~P" (
+  "%%~P" "%AI_SH%" %*
+  exit /b %errorlevel%
+)
+echo [x] bash topilmadi. Git for Windows o'rnating: https://git-scm.com/download/win
+exit /b 127
+CMDEOF
+  } | sed 's/\r$//; s/$/\r/' >"$BIN_DIR/$CMD_NAME.cmd"
+
+  {
+    printf '%s\n' "\$script = '$BIN_SRC'"
+    cat <<'PS1EOF'
+$ErrorActionPreference = 'Stop'
+$bash = (Get-Command bash -ErrorAction SilentlyContinue).Source
+if (-not $bash) {
+  foreach ($p in @(
+    "$env:ProgramFiles\Git\bin\bash.exe",
+    "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
+    "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
+  )) {
+    if (Test-Path $p) { $bash = $p; break }
+  }
+}
+if (-not $bash) {
+  Write-Error "bash topilmadi. Git for Windows o'rnating: https://git-scm.com/download/win"
+  exit 127
+}
+& $bash $script @args
+exit $LASTEXITCODE
+PS1EOF
+  } >"$BIN_DIR/$CMD_NAME.ps1"
+  log_success "Windows wrapper'lar o'rnatildi: $CMD_NAME.cmd, $CMD_NAME.ps1"
 }
 
 # --- 4) Foydalanuvchi konfiguratsiyasi ------------------------------------
@@ -122,13 +194,30 @@ install_shell_block() {
   {
     printf '\n%s\n' "$MARK_BEGIN"
     printf '%s\n' 'export PATH="$HOME/.local/bin:$PATH"'
+    # npm global bin papkasini PATH'ga qo'shamiz — yangi terminalda ham
+    # npm orqali o'rnatilgan AI CLI'lar topilishi uchun.
+    printf '%s\n' 'if command -v npm >/dev/null 2>&1; then'
+    printf '%s\n' '  __ai_npm_prefix="$(npm config get prefix 2>/dev/null)"'
+    printf '%s\n' '  if [ -n "$__ai_npm_prefix" ] && [ "$__ai_npm_prefix" != "undefined" ]; then'
+    printf '%s\n' '    case ":$PATH:" in *":$__ai_npm_prefix/bin:"*) ;; *) export PATH="$__ai_npm_prefix/bin:$PATH" ;; esac'
+    printf '%s\n' '    case ":$PATH:" in *":$__ai_npm_prefix:"*) ;; *) export PATH="$__ai_npm_prefix:$PATH" ;; esac'
+    printf '%s\n' '  fi'
+    printf '%s\n' '  unset __ai_npm_prefix'
+    printf '%s\n' 'fi'
+    # `ai` avtomatik to'ldirish (bash va zsh).
+    printf '%s\n' 'if [ -n "${ZSH_VERSION:-}" ]; then autoload -U +X bashcompinit 2>/dev/null && bashcompinit 2>/dev/null; fi'
+    printf '[ -r "%s" ] && . "%s"\n' "$COMPLETION_SRC" "$COMPLETION_SRC"
     printf '%s\n' "$MARK_END"
   } >>"$rc"
-  log_success "PATH yozuvi qo'shildi: $rc"
+  log_success "PATH va completion yozuvlari qo'shildi: $rc"
 }
 
 main() {
-  printf '\n%s🤖 AI CLI Pult — o\047rnatish%s\n\n' "${C_BOLD:-}" "${C_RESET:-}"
+  if declare -f banner >/dev/null 2>&1; then
+    banner "AI CLI PULT" "o'rnatish boshlanmoqda"
+  else
+    printf '\n%s🤖 AI CLI Pult — o\047rnatish%s\n\n' "${C_BOLD:-}" "${C_RESET:-}"
+  fi
 
   check_prerequisites
   local rc; rc="$(detect_shell_rc)"
@@ -140,11 +229,14 @@ main() {
   install_shell_block "$rc"
 
   printf '\n'
-  log_success "O'rnatish tugadi! 🎉"
-  printf '\nKeyingi qadam — terminalni qayta oching yoki quyidagini ishga tushiring:\n'
-  printf '   %ssource %s%s\n'  "${C_BOLD:-}" "$rc" "${C_RESET:-}"
-  printf 'So\047ngra menyuni oching:\n'
-  printf '   %s%s%s\n\n'       "${C_BOLD:-}" "$CMD_NAME" "${C_RESET:-}"
+  if declare -f hr >/dev/null 2>&1; then
+    printf '  %s%s%s\n' "${C_GREEN:-}" "$(hr 46)" "${C_RESET:-}"
+  fi
+  log_success "O'rnatish muvaffaqiyatli tugadi! 🎉"
+  printf '\n  %sKeyingi qadam%s — terminalni qayta oching, yoki:\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '    %ssource %s%s\n'  "${C_CYAN:-}" "$rc" "${C_RESET:-}"
+  printf '\n  So\047ngra menyuni oching:\n'
+  printf '    %s%sai%s\n\n'     "${C_BOLD:-}" "${C_CYAN:-}" "${C_RESET:-}"
 }
 
 main "$@"

@@ -19,8 +19,8 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 ## 📖 Loyiha haqida
 
 **AI CLI Pult** — terminaldagi 10 ta professional AI CLI agentini (Claude Code,
-Aider, Codex, Gemini, Copilot va h.k.) yagona **FZF** menyusi orqali bitta
-buyruq bilan boshqarish vositasi.
+Aider, Codex, Gemini, Copilot va h.k.) yagona interaktiv menyu orqali bitta
+buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlaydi.
 
 > 🎓 Bu loyiha **o'quvchilar uchun** maxsus tuzilgan: ular bitta buyruq bilan
 > o'rnatadi va istalgan AI CLI'dan darrov foydalana boshlaydi — qaysi paket
@@ -32,13 +32,22 @@ buyruq bilan boshqarish vositasi.
 
 | | Imkoniyat | Tavsif |
 |---|---|---|
+| 🎨 | **Professional dizayn** | Gradientli banner, jonli **spinner** animatsiyasi, rangli preview — toza va zamonaviy |
 | ⚡ | **Bir buyruq bilan o'rnatish** | `curl ... \| bash` — qolgani avtomatik |
-| 🎛️ | **Yagona `ai` menyusi** | 10 ta AI CLI bitta interaktiv FZF ro'yxatida |
+| 🎛️ | **Yagona `ai` menyusi** | 10 ta AI CLI bitta interaktiv ro'yxatda (status + preview) |
 | 🪄 | **Avtomatik o'rnatish** | Tanlangan CLI yo'q bo'lsa — ruxsat so'rab o'zi o'rnatadi |
+| 🚀 | **Tezkor ishga tushirish** | `ai claude` — menyusiz, to'g'ridan-to'g'ri |
+| 🕘 | **Oxirgi tanlovni eslaydi** | Eng so'nggi ishlatilgan agent ro'yxat tepasida |
+| 🔢 | **fzf'siz ham ishlaydi** | fzf yo'q bo'lsa — oddiy raqamli menyuga o'tadi |
+| ♻️ | **`ai --update`** | O'rnatilgan barcha agentlarni bir buyruq bilan yangilaydi |
+| 🩺 | **`ai --doctor`** | Muhitni (node/npm/python/fzf, PATH) tekshiradi |
+| ➕ | **`ai --add`** | Interaktiv tarzda yangi agent qo'shadi (faylni qo'lda tahrirlamasdan) |
+| 🧭 | **PATH avtomatik tuzatish** | npm/pip global bin papkasini o'zi topadi — yangi kompyuterda ham ishlaydi |
+| 🩺 | **Tushunarli xato xabarlari** | Xato bo'lsa — sababini va yechimini **oddiy tilda** aytadi (bolalar ham tushunadi) |
+| ⌨️ | **Shell completion** | `ai <TAB>` agent nomlarini to'ldiradi (bash/zsh) |
+| 🪟 | **Windows wrapper** | `ai.cmd` / `ai.ps1` — PowerShell/cmd'dan ham ishlaydi |
 | 🔌 | **Kengaytiriluvchi** | Yangi agent qo'shish — kod yozmasdan, bitta qator |
 | 🛡️ | **Xavfsiz** | `.bashrc`/`.zshrc` o'zgartirishdan oldin **zaxiralanadi** |
-| 🔍 | **Holat ko'rsatkichi** | `ai --list` har bir CLI o'rnatilgan/yo'qligini ko'rsatadi |
-| ♻️ | **Idempotent** | Qayta o'rnatish hech narsani buzmaydi |
 | 🧹 | **Toza o'chirish** | `uninstall.sh` hammasini izsiz qaytaradi |
 
 ---
@@ -77,10 +86,11 @@ wget -qO- https://raw.githubusercontent.com/SUNNATBEE/ai-cli/main/bootstrap.sh |
 Shu bitta buyruq quyidagilarni avtomatik bajaradi:
 
 1. 📥 Repozitoriyani `~/.ai-cli`'ga klonlaydi
-2. 🔍 `fzf` mavjudligini tekshiradi
+2. 🔍 Kerakli vositalarni tekshiradi (`fzf` ixtiyoriy)
 3. 💾 `~/.bashrc` / `~/.zshrc` faylini **zaxiralaydi**
-4. 🔗 `ai` buyrug'ini `~/.local/bin`'ga o'rnatadi
+4. 🔗 `ai` buyrug'ini `~/.local/bin`'ga o'rnatadi (+ Windows wrapper'lar)
 5. ⚙️ Agentlar ro'yxatini `~/.config/ai-cli/`'ga ko'chiradi
+6. ⌨️ Shell completion va `PATH` sozlamalarini qo'shadi
 
 So'ngra terminalni qayta oching (yoki `source ~/.bashrc`) — va tayyor:
 
@@ -88,22 +98,29 @@ So'ngra terminalni qayta oching (yoki `source ~/.bashrc`) — va tayyor:
 ai
 ```
 
-> ⚠️ **Talab:** `git`, `curl`/`wget` va [`fzf`](https://github.com/junegunn/fzf).
-> `fzf` yo'q bo'lsa, o'rnatuvchi buni aniqlab, ko'rsatma beradi.
+> ✅ **Majburiy:** `git` va `curl`/`wget`.
+> 🪟 **Windows'da:** [Git for Windows](https://git-scm.com/download/win) (Git Bash bilan keladi).
+> ⭐ **Ixtiyoriy:** [`fzf`](https://github.com/junegunn/fzf) — chiroyli izlanadigan menyu uchun.
+> Yo'q bo'lsa ham `ai` ishlaydi (oddiy raqamli menyuga o'tadi).
 >
 > 📌 Agar repozitoriyangizning standart branchi `main` emas, `master` bo'lsa —
 > URL'dagi `main` so'zini `master`'ga almashtiring.
 
 <details>
-<summary><b>fzf'ni qanday o'rnatish kerak?</b></summary>
+<summary><b>fzf'ni qanday o'rnatish kerak? (ixtiyoriy)</b></summary>
 
 ```bash
 brew install fzf            # macOS
 sudo apt install fzf        # Debian / Ubuntu
 sudo pacman -S fzf          # Arch Linux
+winget install fzf          # Windows
 # Boshqalar: https://github.com/junegunn/fzf#installation
 ```
 </details>
+
+> 🩺 Biror narsa ishlamayaptimi? Avval **`ai --doctor`** ni ishga tushiring —
+> u muammoni topib, oddiy tilda nima qilish kerakligini aytadi.
+> To'liq qo'llanma: [**TROUBLESHOOTING.md**](./TROUBLESHOOTING.md).
 
 ---
 
@@ -114,19 +131,37 @@ ai
 ```
 
 ```text
-🤖 AI CLI tanlang › █
-╭──────────────────────────────────────────────────────────╮
-│ Claude Code           🧠 Anthropic'ning rasmiy Claude CLI   │
-│ Aider                 🤝 AI juftlik dasturlash              │
-│ OpenAI Codex          ⚡ OpenAI Codex terminal agenti       │
-│ Gemini CLI            ✨ Google Gemini terminal agenti       │
-│ GitHub Copilot        🐙 GitHub Copilot CLI                 │
-│ ...                                                        │
-╰──────────────────────────────────────────────────────────╯
-  ENTER — ishga tushirish · ESC — bekor qilish
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🤖  AI CLI PULT
+  barcha AI agentlar — bitta buyruq
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╭─ 🤖 AI CLI Pult ───────────────────────────────────────────╮
+│                                          ╭── tafsilot ────╮ │
+│ ▶ ✓  Claude Code     🧠 Claude CLI       │ Claude Code    │ │
+│   ✓  Aider           🤝 pair programming │ ───────────    │ │
+│   ✗  Gemini CLI      ✨ Gemini agenti    │ ● o'rnatilgan  │ │
+│   ✗  GitHub Copilot  🐙 Copilot CLI      │ Binar: claude  │ │
+│   ...                                    ╰────────────────╯ │
+│   ↑/↓ tanlang · yozib qidiring · ENTER · ESC               │
+╰────────────────────────────────────────────────────────────╯
 ```
 
-Yozib qidiring → `↑/↓` bilan tanlang → `ENTER`. CLI darhol ishga tushadi.
+Yozib qidiring → `↑/↓` bilan tanlang → `ENTER`. O'ng tomonda tanlangan
+agentning tafsiloti (holati, buyrug'i, o'rnatish usuli) jonli ko'rinadi.
+
+> 💡 `fzf` yo'q bo'lsa, xuddi shu narsa oddiy **raqamli menyu** sifatida chiqadi —
+> hech narsa yo'qolmaydi.
+
+### 🪄 O'rnatishda jonli animatsiya
+
+CLI o'rnatilayotganda quruq kutish o'rniga — aylanuvchi **spinner** va o'tgan vaqt:
+
+```text
+⠹ 📦 Claude Code o'rnatilmoqda  3s
+✓ 📦 Claude Code o'rnatilmoqda  (8s)
+🚀 Ishga tushirilmoqda  Claude Code
+```
 
 ### 🪄 Avtomatik o'rnatish
 
@@ -146,9 +181,15 @@ o'rnatishni taklif qiladi:
 
 | Buyruq | Vazifasi |
 |---|---|
-| `ai` | Interaktiv FZF menyusini ochadi |
+| `ai` | Interaktiv menyuni ochadi (fzf bo'lsa fzf + preview, bo'lmasa raqamli) |
+| `ai <agent>` | Agentni nomi/binari bo'yicha **to'g'ridan-to'g'ri** ishga tushiradi (masalan `ai claude`) |
 | `ai --list` | Barcha CLI'lar va ularning **o'rnatilgan/yo'q** holatini ko'rsatadi |
+| `ai --update` | O'rnatilgan barcha agentlarni yangilaydi |
+| `ai --doctor` | Muhitni tekshiradi (vositalar, PATH, agentlar holati) |
+| `ai --add` | Interaktiv tarzda yangi agent qo'shadi |
 | `ai --help` | Yordam matnini chiqaradi |
+
+> 💡 `ai <TAB>` — agent nomlarini avtomatik to'ldiradi (o'rnatishdan keyin).
 
 ---
 
@@ -160,10 +201,17 @@ Eng kuchli tomoni — **kod yozish shart emas**. Agentlar oddiy matnli faylda:
 ~/.config/ai-cli/agents.conf
 ```
 
-Har bir agent **bitta qator**, `|` bilan ajratilgan **5 ta maydon**:
+Eng oson yo'li — interaktiv qo'shuvchi:
+
+```bash
+ai --add
+```
+
+Yoki qo'lda — har bir agent **bitta qator**, `|` bilan ajratilgan **5 majburiy + 1
+ixtiyoriy maydon**:
 
 ```text
-NOM | BINARY | BUYRUQ | INSTALL | IZOH
+NOM | BINARY | BUYRUQ | INSTALL | IZOH | KATEGORIYA
 ```
 
 | Maydon | Ma'nosi |
@@ -173,13 +221,14 @@ NOM | BINARY | BUYRUQ | INSTALL | IZOH
 | **BUYRUQ** | Ishga tushiriladigan buyruq (argumentlar bilan) |
 | **INSTALL** | CLI yo'q bo'lsa ishlatiladigan o'rnatish buyrug'i |
 | **IZOH** | Qisqacha tavsif |
+| **KATEGORIYA** | *(ixtiyoriy)* Guruh nomi: `Coding`, `Chat`, `Local` va h.k. |
 
 ### Misol
 
 `agents.conf` oxiriga yangi qator qo'shing:
 
 ```text
-Continue|cn|cn|npm install -g @continuedev/cli|🔁 Continue terminal agenti
+Continue|cn|cn|npm install -g @continuedev/cli|🔁 Continue terminal agenti|Coding
 ```
 
 > 💡 **Eslatma:** `INSTALL` maydonida `|` (pipe) ishlatmang — u maydon ajratgichi.
@@ -190,7 +239,12 @@ Continue|cn|cn|npm install -g @continuedev/cli|🔁 Continue terminal agenti
 
 Saqlang — keyingi `ai` ishga tushishida agent menyuda paydo bo'ladi. 🎉
 
-> 🔧 Boshqa konfiguratsiya faylini ko'rsatish: `export AI_PULT_CONFIG=...`
+> 🔧 **Muhit o'zgaruvchilari:**
+> | O'zgaruvchi | Vazifasi |
+> |---|---|
+> | `AI_PULT_CONFIG` | Boshqa konfiguratsiya faylini ko'rsatish |
+> | `AI_NO_ANIM=1` | Animatsiyalarni o'chirish (spinner/banner) |
+> | `NO_COLOR=1` | Ranglarni butunlay o'chirish |
 
 ---
 
@@ -214,14 +268,19 @@ rm -rf ~/.config/ai-cli ~/.ai-cli
 ```text
 ai-cli/
 ├── README.md             # Ushbu hujjat
+├── TROUBLESHOOTING.md    # Muammolar va sodda yechimlar
 ├── LICENSE               # MIT
 ├── bootstrap.sh          # Bir buyruq bilan o'rnatuvchi (curl | bash)
-├── install.sh            # Asosiy o'rnatuvchi (zaxira + fzf + symlink)
+├── install.sh            # Asosiy o'rnatuvchi (zaxira + symlink + completion)
 ├── uninstall.sh          # Toza o'chiruvchi
 ├── bin/
-│   └── ai-selector.sh    # `ai` buyrug'i — FZF menyu + avtomatik o'rnatish
+│   ├── ai-selector.sh    # `ai` buyrug'i — menyu + avtomatik o'rnatish
+│   ├── ai.cmd            # Windows (cmd.exe) wrapper
+│   └── ai.ps1            # Windows (PowerShell) wrapper
 ├── lib/
 │   └── common.sh         # Umumiy funksiyalar (log, rang, xato boshqaruvi)
+├── completions/
+│   └── ai.bash           # `ai` uchun bash/zsh avtomatik to'ldirish
 └── config/
     └── agents.conf       # Agentlar ro'yxati
 ```

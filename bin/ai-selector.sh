@@ -3,13 +3,18 @@
 # ai-selector.sh — AI CLI Pult'ning asosiy skripti (buyruq: `ai`).
 #
 # Vazifasi: config/agents.conf faylidan AI CLI agentlarini o'qiydi, ularni
-# FZF interfeysi orqali ko'rsatadi va tanlangan agentni ishga tushiradi.
-# Agar tanlangan CLI o'rnatilmagan bo'lsa — ruxsat so'rab, o'zi o'rnatadi.
+# FZF interfeysi (yoki oddiy raqamli menyu) orqali ko'rsatadi va tanlangan
+# agentni ishga tushiradi. Agar CLI o'rnatilmagan bo'lsa — ruxsat so'rab,
+# o'zi o'rnatadi.
 #
 # Foydalanish:
-#   ai            # interaktiv FZF menyusi
-#   ai --list     # agentlar ro'yxati + o'rnatilgan/yo'q holati
-#   ai --help     # yordam
+#   ai              # interaktiv menyu
+#   ai claude       # to'g'ridan-to'g'ri agentni nomi/binari bo'yicha ishga tushirish
+#   ai --list       # agentlar ro'yxati + holati
+#   ai --update     # o'rnatilgan agentlarni yangilash
+#   ai --doctor     # muhitni tekshirish
+#   ai --add        # interaktiv yangi agent qo'shish
+#   ai --help       # yordam
 #
 # Exit kodlari:
 #   0   — muvaffaqiyat (yoki foydalanuvchi bekor qildi)
@@ -28,10 +33,19 @@ while [[ -L "$SCRIPT_SOURCE" ]]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" >/dev/null 2>&1 && pwd)"
 PROJECT_ROOT="$(cd -P "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
+# Preview kabi qism-jarayonlar uchun skriptning to'liq yo'li.
+SELF="$SCRIPT_DIR/$(basename "$SCRIPT_SOURCE")"
 
 # Foydalanuvchi konfiguratsiyasi ustun, bo'lmasa repodagisi.
 USER_CONFIG="${AI_PULT_CONFIG:-$HOME/.config/ai-cli/agents.conf}"
 REPO_CONFIG="$PROJECT_ROOT/config/agents.conf"
+
+# Oxirgi tanlangan agentni eslab qolish uchun holat fayli.
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ai-cli"
+STATE_FILE="$STATE_DIR/last"
+
+# Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
+DEFAULT_CATEGORY="AI"
 
 # --- Umumiy yordamchilarni yuklash ----------------------------------------
 LIB="$PROJECT_ROOT/lib/common.sh"
@@ -42,6 +56,14 @@ fi
 # shellcheck source=../lib/common.sh
 source "$LIB"
 
+# Vaqtinchalik fayllarni tozalash + kursorni tiklash.
+TMPFILES=()
+cleanup() {
+  show_cursor
+  local f
+  for f in ${TMPFILES[@]+"${TMPFILES[@]}"}; do rm -f "$f" 2>/dev/null || true; done
+}
+trap cleanup EXIT
 trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
 
 # --- Yordam matni ---------------------------------------------------------
@@ -50,11 +72,16 @@ usage() {
 AI CLI Pult — terminaldagi AI CLI agentlarini bitta menyudan boshqaring.
 
 FOYDALANISH:
-  ai [TANLOV]
+  ai [TANLOV | AGENT]
 
 TANLOVLAR:
-  (argumentsiz)   Interaktiv FZF menyusini ochadi
-  -l, --list      Agentlar ro'yxati va ularning holatini ko'rsatadi
+  (argumentsiz)   Interaktiv menyuni ochadi (fzf bo'lsa fzf, bo'lmasa raqamli)
+  AGENT           Agentni nomi yoki binari bo'yicha to'g'ridan-to'g'ri ishga tushiradi
+                  (masalan: `ai claude`, `ai gemini`)
+  -l, --list      Agentlar ro'yxati va holatini ko'rsatadi
+  -u, --update    O'rnatilgan barcha agentlarni yangilaydi
+  -d, --doctor    Muhitni tekshiradi (node/npm/python/fzf, PATH, agentlar)
+  -a, --add       Interaktiv tarzda yangi agent qo'shadi
   -h, --help      Ushbu yordam matnini ko'rsatadi
 
 KONFIGURATSIYA:
@@ -63,8 +90,8 @@ KONFIGURATSIYA:
     2) ~/.config/ai-cli/agents.conf
     3) <repo>/config/agents.conf
 
-  Yangi agent qo'shish — faylga quyidagi formatda bitta qator yozing:
-    NOM|BINARY|BUYRUQ|INSTALL|IZOH
+  Format (6-maydon ixtiyoriy):
+    NOM|BINARY|BUYRUQ|INSTALL|IZOH|KATEGORIYA
 EOF
 }
 
@@ -81,90 +108,294 @@ resolve_config() {
 
 trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
+# --- O'rnatish buyrug'i qaysi dasturga tayanishini aniqlash ----------------
+# Masalan "npm install -g ..." → "npm". Bu dastur yo'q bo'lsa, oldindan
+# sodda xabar berib, foydalanuvchini chalkash xatolardan asraymiz.
+detect_install_tool() {
+  local install="$1"
+  if   [[ "$install" == *"npm "* ]];     then echo "npm"
+  elif [[ "$install" == *"pip"* || "$install" == *"python3 "* ]]; then echo "python3"
+  elif [[ "$install" == *"brew "* ]];    then echo "brew"
+  elif [[ "$install" == *"curl "* ]];    then echo "curl"
+  elif [[ "$install" == *"wget "* ]];    then echo "wget"
+  else echo ""; fi
+}
+
+# --- Oxirgi tanlovni eslab qolish -----------------------------------------
+read_last() { [[ -r "$STATE_FILE" ]] && cat "$STATE_FILE" 2>/dev/null || true; }
+save_last() {
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  printf '%s\n' "$1" >"$STATE_FILE" 2>/dev/null || true
+}
+
+# --- PATH'ni keng tarqalgan paket-menejer bin papkalari bilan boyitish -----
+# AI CLI'lar odatda `npm -g`, `pip --user`, `cargo` orqali o'rnatiladi. Yangi
+# kompyuterda bu papkalar PATH'da bo'lmasligi mumkin — natijada o'rnatilgan
+# CLI topilmay, har safar qaytadan "o'rnatish" so'raladi. Bu funksiya o'sha
+# papkalarni JORIY sessiya PATH'iga qo'shib, muammoni bartaraf etadi.
+augment_tool_path() {
+  local dirs=() d prefix userbase
+  if command -v npm >/dev/null 2>&1; then
+    prefix="$(npm config get prefix 2>/dev/null || true)"
+    if [[ -n "$prefix" && "$prefix" != "undefined" ]]; then
+      # Unix'da binar $prefix/bin ichida, Windows'da $prefix ichida bo'ladi.
+      dirs+=("$prefix/bin" "$prefix")
+    fi
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    userbase="$(python3 -m site --user-base 2>/dev/null || true)"
+    [[ -n "$userbase" ]] && dirs+=("$userbase/bin" "$userbase/Scripts")
+  fi
+  dirs+=("$HOME/.local/bin" "$HOME/bin" "$HOME/.cargo/bin" "$HOME/AppData/Roaming/npm")
+
+  for d in "${dirs[@]}"; do
+    if [[ -d "$d" && ":$PATH:" != *":$d:"* ]]; then
+      PATH="$d:$PATH"
+    fi
+  done
+  export PATH
+  hash -r 2>/dev/null || true
+}
+
 # --- Konfiguratsiyani o'qib, TAB bilan ajratilgan qatorlar chiqarish -------
-# Chiqish formati: NAME\tDESC\tBINARY\tCOMMAND\tINSTALL
+# Chiqish formati: NAME\tDESC\tBINARY\tCOMMAND\tINSTALL\tCATEGORY
 parse_agents() {
   local config="$1"
-  local line name binary command install desc lineno=0 found=0
+  local line name binary command install desc category lineno=0 found=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     lineno=$((lineno + 1))
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
     [[ "$line" =~ ^[[:space:]]*$ ]] && continue
 
-    IFS='|' read -r name binary command install desc <<<"$line"
+    IFS='|' read -r name binary command install desc category <<<"$line"
     name="$(trim "${name:-}")"
     binary="$(trim "${binary:-}")"
     command="$(trim "${command:-}")"
     install="$(trim "${install:-}")"
     desc="$(trim "${desc:-}")"
+    category="$(trim "${category:-}")"
+    [[ -z "$category" ]] && category="$DEFAULT_CATEGORY"
 
     if [[ -z "$name" || -z "$binary" || -z "$command" ]]; then
       log_warn "Noto'g'ri qator o'tkazib yuborildi (#$lineno): $line"
       continue
     fi
-    printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$desc" "$binary" "$command" "$install"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$desc" "$binary" "$command" "$install" "$category"
     found=1
   done <"$config"
 
   [[ "$found" -eq 1 ]] || die 1 "Konfiguratsiyada yaroqli agent topilmadi: $config"
 }
 
+# --- Holat ustuni bilan to'ldirilgan qatorlar -----------------------------
+# Chiqish formati: NAME\tDESC\tBINARY\tCOMMAND\tINSTALL\tCATEGORY\tSTATUS
+build_rows() {
+  local config="$1" name desc binary command install category status
+  while IFS=$'\t' read -r name desc binary command install category; do
+    if command -v "$binary" >/dev/null 2>&1; then
+      status="✓ o'rnatilgan"
+    else
+      status="✗ yo'q"
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$name" "$desc" "$binary" "$command" "$install" "$category" "$status"
+  done < <(parse_agents "$config")
+}
+
 # --- --list rejimi --------------------------------------------------------
 list_agents() {
   local config; config="$(resolve_config)"
   log_info "Konfiguratsiya: $config"
-  printf '\n%s%-20s %-12s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "IZOH" "$C_RESET"
+  printf '\n%s%-20s %-14s %-10s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "KATEGORIYA" "IZOH" "$C_RESET"
   printf '%s\n' "----------------------------------------------------------------------"
-  local name desc binary command install status
-  while IFS=$'\t' read -r name desc binary command install; do
-    if command -v "$binary" >/dev/null 2>&1; then
-      status="${C_GREEN}✓ o'rnatilgan${C_RESET}"
-    else
-      status="${C_RED}✗ yo'q${C_RESET}       "
-    fi
-    printf '%-20s %b %s\n' "$name" "$status" "$desc"
-  done < <(parse_agents "$config")
+  local name desc binary command install category status icon color
+  while IFS=$'\t' read -r name desc binary command install category status; do
+    if [[ "$status" == *"✓"* ]]; then color="$C_GREEN"; else color="$C_RED"; fi
+    printf '%-20s %b%-14s%b %-10s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "$desc"
+  done < <(build_rows "$config")
+}
+
+# --- Preview (fzf tomonidan qism-jarayon sifatida chaqiriladi) -------------
+# fzf preview'ni TTY'siz ishga tushiradi, shuning uchun ranglarni bevosita
+# ANSI kodlari bilan beramiz (fzf --ansi ularni to'g'ri ko'rsatadi).
+preview_agent() {
+  local name="$1" datafile="$2"
+  [[ -r "$datafile" ]] || return 0
+  awk -F'\t' -v n="$name" '
+    BEGIN {
+      ESC = sprintf("%c", 27)
+      B   = ESC "[1m";      R = ESC "[0m"
+      CY  = ESC "[38;5;87m"; GY = ESC "[90m"
+      GRN = ESC "[32m";      RED = ESC "[31m";  MG = ESC "[38;5;213m"
+    }
+    $1 == n {
+      # Holat belgisi
+      if ($7 ~ /✓/) { badge = GRN "● o\47rnatilgan" R }
+      else          { badge = RED "○ o\47rnatilmagan" R }
+
+      print ""
+      print "  " B CY $1 R
+      print "  " GY "────────────────────────────" R
+      print ""
+      print "  " GY "Holat     " R badge
+      print "  " GY "Binar     " R $3
+      print "  " GY "Buyruq    " R MG $4 R
+      print "  " GY "Kategoriya" R $6
+      print ""
+      print "  " GY "O\47rnatish:" R
+      print "    " ($5 == "" ? GY "(belgilanmagan)" R : $5)
+      print ""
+      print "  " GY "────────────────────────────" R
+      print "  " $2
+      exit
+    }' "$datafile"
+}
+
+# --- Menyu qatorlarini qurish (oxirgi tanlov yuqorida) ---------------------
+# Chiqish formati: KO'RINISH\tNAME  (NAME — qidirish uchun yashirin maydon)
+build_menu() {
+  local rows="$1" last="$2"
+  awk -F'\t' -v last="$last" -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" '
+    {
+      name=$1; desc=$2; status=$7;
+      if (status ~ /✓/) { icon = g "✓" z } else { icon = r "✗" z }
+      disp = sprintf("%s  %-18s %s", icon, name, desc)
+      line = disp "\t" name
+      if (name == last && last != "") { first = line }
+      else { rest[++n] = line }
+    }
+    END {
+      if (first != "") print first
+      for (i = 1; i <= n; i++) print rest[i]
+    }
+  ' <<<"$rows"
+}
+
+# --- fzf orqali tanlash ---------------------------------------------------
+select_with_fzf() {
+  local menu="$1" datafile="$2" selection rc
+  selection="$(
+    printf '%s\n' "$menu" \
+      | fzf --ansi \
+            --delimiter='\t' \
+            --with-nth=1 \
+            --prompt='  ' \
+            --pointer='▶' \
+            --marker='✓' \
+            --height=85% \
+            --layout=reverse \
+            --border=rounded \
+            --border-label=' 🤖 AI CLI Pult ' \
+            --margin=1,2 \
+            --padding=1 \
+            --info=inline \
+            --color='fg:-1,bg:-1,hl:51,fg+:231,bg+:236,hl+:87,info:245,prompt:213,pointer:213,marker:84,header:245,border:60,label:87' \
+            --header='↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor' \
+            --preview "bash \"$SELF\" __preview {2} \"$datafile\"" \
+            --preview-window='right,52%,wrap,border-left' \
+            --preview-label=' tafsilot '
+  )" || {
+    rc=$?
+    if [[ "$rc" -eq 130 ]]; then log_info "Bekor qilindi."; exit 0; fi
+    die "$rc" "fzf kutilmagan kod bilan to'xtadi: $rc"
+  }
+  [[ -z "$selection" ]] && { log_info "Hech narsa tanlanmadi."; exit 0; }
+  # Yashirin NAME maydoni — TAB'dan keyingi qism.
+  printf '%s' "$selection" | sed 's/.*\t//'
+}
+
+# --- fzf bo'lmaganda oddiy raqamli menyu ----------------------------------
+select_with_numbers() {
+  local menu="$1"
+  local -a displays=() names=()
+  local disp nm
+  while IFS=$'\t' read -r disp nm; do
+    [[ -z "$nm" ]] && continue
+    displays+=("$disp"); names+=("$nm")
+  done <<<"$menu"
+
+  [[ "${#names[@]}" -gt 0 ]] || die 1 "Menyu uchun agent topilmadi."
+
+  log_warn "fzf topilmadi — oddiy menyu ishlatilmoqda (yaxshiroq tajriba uchun fzf o'rnating)."
+  printf '\n%sAI CLI tanlang:%s\n' "${C_BOLD:-}" "${C_RESET:-}" >&2
+  local i
+  for i in "${!names[@]}"; do
+    printf '%b%3d)%b %b\n' "${C_BLUE:-}" "$((i + 1))" "${C_RESET:-}" "${displays[$i]}" >&2
+  done
+  printf '%s\n' "----------------------------------------" >&2
+
+  local choice="" prompt="Raqam kiriting (1-${#names[@]}, ESC=bekor) › "
+  trap - ERR
+  if { : >/dev/tty; } 2>/dev/null; then
+    printf '%s' "$prompt" >/dev/tty
+    IFS= read -r choice </dev/tty || choice=""
+  else
+    printf '%s' "$prompt" >&2
+    IFS= read -r choice || choice=""
+  fi
+  trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+
+  [[ -z "$choice" ]] && { log_info "Bekor qilindi."; exit 0; }
+  if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#names[@]} )); then
+    die 2 "Noto'g'ri tanlov: '$choice'."
+  fi
+  printf '%s' "${names[$((choice - 1))]}"
 }
 
 # --- Interaktiv menyu -----------------------------------------------------
 run_menu() {
-  require_cmd fzf "https://github.com/junegunn/fzf#installation"
+  banner
   local config; config="$(resolve_config)"
+  local rows; rows="$(build_rows "$config")"
+  local last; last="$(read_last)"
+  local menu; menu="$(build_menu "$rows" "$last")"
 
-  local agents selection name
-  agents="$(parse_agents "$config")"
+  local name
+  if command -v fzf >/dev/null 2>&1; then
+    local datafile; datafile="$(mktemp)"; TMPFILES+=("$datafile")
+    printf '%s\n' "$rows" >"$datafile"
+    name="$(select_with_fzf "$menu" "$datafile")"
+  else
+    name="$(select_with_numbers "$menu")"
+  fi
 
-  selection="$(
-    printf '%s\n' "$agents" \
-      | awk -F'\t' '{ printf "%-20s  %s\n", $1, $2 }' \
-      | fzf --ansi \
-            --prompt='🤖 AI CLI tanlang › ' \
-            --height=70% \
-            --reverse \
-            --border=rounded \
-            --header='ENTER — ishga tushirish · ESC — bekor qilish'
-  )" || {
-    local rc=$?
-    if [[ "$rc" -eq 130 ]]; then log_info "Bekor qilindi."; exit 0; fi
-    die "$rc" "fzf kutilmagan kod bilan to'xtadi: $rc"
-  }
+  launch_selected "$rows" "$name"
+}
 
-  [[ -z "$selection" ]] && { log_info "Hech narsa tanlanmadi."; exit 0; }
-
-  # Nomni ajratib olamiz: ikki yoki undan ortiq probelgacha bo'lgan qism.
-  # (awk -F ishonchli; [[:space:]] emoji bo'lgan qatorda nojo'ya ishlashi mumkin.)
-  name="$(printf '%s' "$selection" | awk -F'  +' '{print $1}')"
-
+# --- Tanlangan agentni ishga tushirish ------------------------------------
+launch_selected() {
+  local rows="$1" name="$2"
   local row binary command install
-  row="$(printf '%s\n' "$agents" | awk -F'\t' -v n="$name" '$1 == n { print; exit }')"
+  row="$(awk -F'\t' -v n="$name" '$1 == n { print; exit }' <<<"$rows")"
   [[ -n "$row" ]] || die 1 "Tanlangan agent topilmadi: $name"
 
   binary="$(printf '%s'  "$row" | cut -f3)"
   command="$(printf '%s' "$row" | cut -f4)"
   install="$(printf '%s' "$row" | cut -f5)"
 
+  save_last "$name"
   ensure_installed "$name" "$binary" "$install"
   launch_agent "$name" "$binary" "$command"
+}
+
+# --- Tezkor ishga tushirish: `ai <nom-yoki-binary>` -----------------------
+quick_launch() {
+  local query="$1"
+  local config; config="$(resolve_config)"
+  local rows; rows="$(build_rows "$config")"
+
+  local name
+  # 1) Nom yoki binar bo'yicha aniq moslik (katta-kichik harf farqsiz).
+  name="$(awk -F'\t' -v q="$query" 'BEGIN{ql=tolower(q)}
+            tolower($1)==ql || tolower($3)==ql { print $1; exit }' <<<"$rows")"
+  # 2) Bo'lmasa — qisman moslik.
+  if [[ -z "$name" ]]; then
+    name="$(awk -F'\t' -v q="$query" 'BEGIN{ql=tolower(q)}
+              index(tolower($1),ql) || index(tolower($3),ql) { print $1; exit }' <<<"$rows")"
+  fi
+  [[ -n "$name" ]] || die 2 "Mos agent topilmadi: '$query'. Ro'yxat uchun: ai --list"
+
+  launch_selected "$rows" "$name"
 }
 
 # --- CLI mavjudligini ta'minlash (kerak bo'lsa avtomatik o'rnatish) -------
@@ -197,21 +428,62 @@ ensure_installed() {
     die 127 "Bekor qilindi. '$name'ni qo'lda o'rnatish uchun: $install"
   fi
 
-  log_info "O'rnatilmoqda: $name ..."
+  # O'rnatishdan OLDIN: kerakli dastur (npm/python3/curl...) bormi? Yo'q bo'lsa
+  # foydalanuvchiga nima yetishmayotganini SODDA tilda aytamiz.
+  local tool; tool="$(detect_install_tool "$install")"
+  if [[ -n "$tool" ]] && ! command -v "$tool" >/dev/null 2>&1; then
+    panel "❌ '$name' o'rnatilmadi — avval bitta dastur kerak" \
+      "'$name'ni o'rnatish uchun kompyuteringizda \"$tool\" bo'lishi shart," \
+      "lekin u topilmadi." \
+      "" \
+      "👉 $(tool_hint "$tool")" \
+      "" \
+      "Shuni o'rnatib, terminalni qayta oching va yana \"ai\" deb yozing."
+    die 127 "'$tool' topilmadi — '$name' o'rnatilmadi."
+  fi
+
   # ERR tutqichini vaqtincha o'chirib, o'rnatish xatosini o'zimiz ushlaymiz.
   trap - ERR
-  if ! eval "$install"; then
+  if ! spin_run "📦 '$name' o'rnatilmoqda" "$install"; then
+    local tail_lines=""
+    [[ -r "${SPIN_LOG:-}" ]] && tail_lines="$(tail -n 6 "$SPIN_LOG" 2>/dev/null || true)"
     trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
-    die 1 "O'rnatish muvaffaqiyatsiz tugadi: $name. Buyruqni qo'lda sinab ko'ring: $install"
+    panel "❌ '$name' o'rnatishda xatolik yuz berdi" \
+      "Quyidagi buyruq muvaffaqiyatsiz tugadi:" \
+      "    $install" \
+      "" \
+      "Ko'pincha sabab quyidagilardan biri bo'ladi:" \
+      "  1) 🌐 Internet yo'q yoki sekin — Wi-Fi/ulanishni tekshiring." \
+      "  2) 🔒 Ruxsat yetarli emas — buyruqni \"sudo\" bilan sinab ko'ring." \
+      "  3) 📦 \"${tool:-dastur}\" eski — uni yangilab, qaytadan urinib ko'ring." \
+      "" \
+      "👉 Aniq sababni ko'rish uchun yuqoridagi buyruqni terminalga o'zingiz" \
+      "   nusxalab ishga tushiring — xato matni to'liq ko'rinadi."
+    if [[ -n "$tail_lines" ]]; then
+      printf '%s  Xato tafsiloti (oxirgi qatorlar):%s\n' "$C_GRAY" "$C_RESET" >&2
+      printf '%s\n' "$tail_lines" | sed 's/^/    /' >&2
+      printf '\n' >&2
+    fi
+    rm -f "${SPIN_LOG:-}" 2>/dev/null || true
+    die 1 "O'rnatish muvaffaqiyatsiz tugadi: $name."
   fi
+  rm -f "${SPIN_LOG:-}" 2>/dev/null || true
   trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
 
-  # Yangi PATH yozuvlari joriy sessiyada ko'rinishi uchun hash'ni tozalaymiz.
-  hash -r 2>/dev/null || true
+  # O'rnatish yangi bin papkasi yaratgan bo'lishi mumkin — PATH'ni qayta
+  # boyitamiz va hash'ni tozalaymiz, shunda binar joriy sessiyada ko'rinadi.
+  augment_tool_path
 
   if ! command -v "$binary" >/dev/null 2>&1; then
-    log_error "O'rnatish tugadi, biroq '$binary' hali PATH'da ko'rinmayapti."
-    die 127 "Terminalni qayta oching yoki PATH'ni yangilab, qaytadan urinib ko'ring."
+    panel "⚠️  '$name' o'rnatildi, lekin hali ishga tushmadi" \
+      "Dastur o'rnatildi, biroq tizim \"$binary\" buyrug'ini hali topa olmayapti." \
+      "Bu odatda \"PATH\" sozlamasi yangilanmagani uchun bo'ladi." \
+      "" \
+      "👉 Yechimi oson: terminalni butunlay yopib, qaytadan oching," \
+      "   so'ng yana \"ai\" deb yozing — endi ishlaydi." \
+      "" \
+      "Agar shunda ham yordam bermasa: \"ai --doctor\" buyrug'i muammoni ko'rsatadi."
+    die 127 "'$binary' hali PATH'da ko'rinmayapti — terminalni qayta oching."
   fi
   log_success "O'rnatildi: $name"
 }
@@ -219,19 +491,158 @@ ensure_installed() {
 # --- Agentni ishga tushirish ----------------------------------------------
 launch_agent() {
   local name="$1" binary="$2" command="$3"
-  log_success "Ishga tushirilmoqda: $name  ➜  $command"
+  ui_launch "$name"
   trap - ERR
+  cleanup
   # shellcheck disable=SC2086
   exec $command
 }
 
+# --- O'rnatilgan agentlarni yangilash -------------------------------------
+update_agents() {
+  local config; config="$(resolve_config)"
+  log_info "Konfiguratsiya: $config"
+  local rows; rows="$(build_rows "$config")"
+  local name desc binary command install category status
+  local checked=0 ok=0 fail=0
+
+  while IFS=$'\t' read -r name desc binary command install category status; do
+    command -v "$binary" >/dev/null 2>&1 || continue
+    checked=$((checked + 1))
+    if [[ -z "$install" ]]; then
+      log_warn "$name: o'rnatish buyrug'i yo'q — o'tkazib yuborildi."
+      continue
+    fi
+    trap - ERR
+    if spin_run "🔄 $name yangilanmoqda" "$install"; then
+      ok=$((ok + 1))
+    else
+      fail=$((fail + 1))
+    fi
+    rm -f "${SPIN_LOG:-}" 2>/dev/null || true
+    trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+  done <<<"$rows"
+
+  if [[ "$checked" -eq 0 ]]; then
+    log_warn "O'rnatilgan agent topilmadi — yangilash uchun avval agent o'rnating."
+  else
+    log_success "Yangilash tugadi: $ok ta muvaffaqiyatli, $fail ta xato (jami $checked)."
+  fi
+}
+
+# --- Muhit tashxisi (doctor) ----------------------------------------------
+doctor() {
+  banner "AI CLI — TASHXIS" "muhitingizni tekshiramiz"
+
+  local tool
+  printf '%sVositalar:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  for tool in bash fzf node npm python3 curl git; do
+    if command -v "$tool" >/dev/null 2>&1; then
+      printf '  %b✓%b %-8s %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$tool" "$(command -v "$tool")"
+    else
+      printf '  %b✗%b %-8s topilmadi\n' "${C_RED:-}" "${C_RESET:-}" "$tool"
+    fi
+  done
+
+  printf '\n%sPATH tekshiruvi:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  if command -v npm >/dev/null 2>&1; then
+    local prefix bindir
+    prefix="$(npm config get prefix 2>/dev/null || true)"
+    printf '  npm prefix: %s\n' "${prefix:-(aniqlanmadi)}"
+    for bindir in "$prefix/bin" "$prefix"; do
+      [[ -d "$bindir" ]] || continue
+      if [[ ":$PATH:" == *":$bindir:"* ]]; then
+        printf '  %b✓%b PATH ichida: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$bindir"
+      else
+        printf '  %b✗%b PATH da YO''Q: %s  (ai uni o'\''zi qo'\''shadi)\n' "${C_YELLOW:-}" "${C_RESET:-}" "$bindir"
+      fi
+    done
+  else
+    printf '  %b!%b npm topilmadi — npm orqali o'\''rnatiladigan agentlar ishlamaydi.\n' "${C_YELLOW:-}" "${C_RESET:-}"
+  fi
+  if [[ -d "$HOME/.local/bin" ]]; then
+    if [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
+      printf '  %b✓%b PATH ichida: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$HOME/.local/bin"
+    else
+      printf '  %b✗%b PATH da YO''Q: %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$HOME/.local/bin"
+    fi
+  fi
+
+  printf '\n%sAgentlar holati:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  list_agents
+}
+
+# --- Interaktiv yangi agent qo'shish --------------------------------------
+prompt_tty() {
+  # prompt_tty <savol> <o'zgaruvchi-nomi>
+  local q="$1" __var="$2" __val=""
+  trap - ERR
+  if { : >/dev/tty; } 2>/dev/null; then
+    printf '%s' "$q" >/dev/tty
+    IFS= read -r __val </dev/tty || __val=""
+  else
+    printf '%s' "$q" >&2
+    IFS= read -r __val || __val=""
+  fi
+  trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+  printf -v "$__var" '%s' "$__val"
+}
+
+add_agent() {
+  printf '\n%s➕ Yangi agent qo'\''shish%s\n\n' "${C_BOLD:-}" "${C_RESET:-}"
+  local name binary command install desc category
+  prompt_tty "Nom (masalan: My Agent)        : " name
+  prompt_tty "Binary (PATH'dagi buyruq nomi) : " binary
+  prompt_tty "Ishga tushirish buyrug'i       : " command
+  prompt_tty "O'rnatish buyrug'i (ixtiyoriy) : " install
+  prompt_tty "Izoh (ixtiyoriy)               : " desc
+  prompt_tty "Kategoriya (ixtiyoriy)         : " category
+
+  name="$(trim "$name")"; binary="$(trim "$binary")"; command="$(trim "$command")"
+  install="$(trim "$install")"; desc="$(trim "$desc")"; category="$(trim "$category")"
+  [[ -z "$command" ]] && command="$binary"
+  [[ -z "$category" ]] && category="$DEFAULT_CATEGORY"
+
+  if [[ -z "$name" || -z "$binary" ]]; then
+    die 2 "Nom va Binary majburiy. Bekor qilindi."
+  fi
+  if [[ "$name$binary$command$install$desc$category" == *"|"* ]]; then
+    die 2 "Maydonlar ichida '|' belgisi bo'lmasligi kerak. Bekor qilindi."
+  fi
+
+  # Foydalanuvchi konfiguratsiyasiga yozamiz (bo'lmasa yaratamiz).
+  mkdir -p "$(dirname "$USER_CONFIG")"
+  if [[ ! -e "$USER_CONFIG" ]]; then
+    if [[ -r "$REPO_CONFIG" ]]; then
+      cp -- "$REPO_CONFIG" "$USER_CONFIG"
+    else
+      printf '# AI CLI Pult — foydalanuvchi agentlari\n' >"$USER_CONFIG"
+    fi
+  fi
+  printf '%s|%s|%s|%s|%s|%s\n' \
+    "$name" "$binary" "$command" "$install" "$desc" "$category" >>"$USER_CONFIG"
+  log_success "Qo'shildi: $name  →  $USER_CONFIG"
+}
+
 # --- Argumentlar ----------------------------------------------------------
 main() {
+  # Preview qism-jarayoni — augment va boshqa og'ir ishlardan oldin.
+  if [[ "${1:-}" == "__preview" ]]; then
+    preview_agent "${2:-}" "${3:-}"
+    exit 0
+  fi
+
+  augment_tool_path
+
   case "${1:-}" in
-    -h|--help) usage ;;
-    -l|--list) list_agents ;;
-    "")        run_menu ;;
-    *)         log_error "Noma'lum tanlov: $1"; echo; usage; exit 2 ;;
+    -h|--help)    usage ;;
+    -l|--list)    list_agents ;;
+    -u|--update)  update_agents ;;
+    -d|--doctor)  doctor ;;
+    -a|--add)     add_agent ;;
+    "")           run_menu ;;
+    -*)           log_error "Noma'lum tanlov: $1"; echo; usage; exit 2 ;;
+    *)            quick_launch "$1" ;;
   esac
 }
 

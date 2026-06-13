@@ -1,7 +1,15 @@
 # Shell skriptlari HAR DOIM LF qator-tugashi bilan saqlanadi.
-# (CRLF bo'lsa Linux/macOS'da "#!/usr/bin/env bash\r" xatosi yuzaga keladi.)
+# (CRLF bo'lsa bash'da "#!/usr/bin/env bash\r" / "bad interpreter" xatosi chiqadi.)
 *.sh        text eol=lf
+*.bash      text eol=lf
 *.conf      text eol=lf
+
+# PowerShell LF bilan ham ishlaydi — bash bilan bir xil saqlaymiz.
+*.ps1       text eol=lf
+
+# cmd/bat fayllari Windows'da CRLF bo'lishi kerak.
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
 
 # Hujjatlar
 *.md        text
