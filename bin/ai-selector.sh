@@ -149,6 +149,19 @@ augment_tool_path() {
   dirs+=("$HOME/.local/bin" "$HOME/bin" "$HOME/.cargo/bin" "$HOME/AppData/Roaming/npm")
 
   for d in "${dirs[@]}"; do
+    # Windows-shakldagi yo'l (masalan `C:\Users\...` — npm config get prefix
+    # Git Bash'da shunday qaytaradi) PATH'ga to'g'ridan-to'g'ri qo'shilsa, ":"
+    # ajratgich "C:" ni bo'lib yuboradi va `\Users\...` degan buzuq yozuv hosil
+    # bo'ladi. Bu esa npm shim'larida yo'lni `C:\Program Files\Git\Users\...` ga
+    # aylantirib, "Cannot find module" xatosini keltirib chiqaradi. Shu sababli
+    # bunday yo'llarni avval POSIX shaklga (`/c/Users/...`) o'tkazamiz.
+    case "$d" in
+      [A-Za-z]:[\\/]*|*\\*)
+        if command -v cygpath >/dev/null 2>&1; then
+          d="$(cygpath -u "$d" 2>/dev/null || printf '%s' "$d")"
+        fi
+        ;;
+    esac
     if [[ -d "$d" && ":$PATH:" != *":$d:"* ]]; then
       PATH="$d:$PATH"
     fi
@@ -447,9 +460,35 @@ ensure_installed() {
   # ERR tutqichini vaqtincha o'chirib, o'rnatish xatosini o'zimiz ushlaymiz.
   trap - ERR
   if ! spin_run "📦 '$name' o'rnatilmoqda" "$install"; then
-    local tail_lines=""
-    [[ -r "${SPIN_LOG:-}" ]] && tail_lines="$(tail -n 6 "$SPIN_LOG" 2>/dev/null || true)"
+    local tail_lines="" log_text=""
+    if [[ -r "${SPIN_LOG:-}" ]]; then
+      tail_lines="$(tail -n 6 "$SPIN_LOG" 2>/dev/null || true)"
+      log_text="$(cat "$SPIN_LOG" 2>/dev/null || true)"
+    fi
     trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+
+    # O'rnatuvchi "bu OS qo'llab-quvvatlanmaydi" desa — adashtiruvchi (internet/
+    # sudo/curl) sabablar o'rniga halol, aniq xabar beramiz.
+    if printf '%s' "$log_text" | grep -qiE 'unsupported (operating system|os|platform|architecture)|not supported|no (prebuilt|pre-built|binary)|MINGW|MSYS|windows is not'; then
+      panel "🚫 '$name' bu operatsion tizimda qo'llab-quvvatlanmaydi" \
+        "'$name' o'rnatuvchisi sizning tizimingizni (Windows / Git Bash —" \
+        "MINGW64) qo'llab-quvvatlamasligini aytdi. Bu — internet yoki ruxsat" \
+        "muammosi EMAS; shunchaki bu agentning Windows uchun o'rnatuvchisi yo'q." \
+        "" \
+        "👉 Variantlar:" \
+        "  • Boshqa agentni tanlang (masalan Claude Code, Gemini, Aider — ular" \
+        "    Windows'da ishlaydi)." \
+        "  • Yoki '$name'ni WSL (Windows Subsystem for Linux) ichida ishlating." \
+        "  • Agent rasmiy sahifasida Windows uchun yo'l bor-yo'qligini tekshiring."
+      if [[ -n "$tail_lines" ]]; then
+        printf '%s  Xato tafsiloti (oxirgi qatorlar):%s\n' "$C_GRAY" "$C_RESET" >&2
+        printf '%s\n' "$tail_lines" | sed 's/^/    /' >&2
+        printf '\n' >&2
+      fi
+      rm -f "${SPIN_LOG:-}" 2>/dev/null || true
+      die 127 "'$name' bu OS'da qo'llab-quvvatlanmaydi."
+    fi
+
     panel "❌ '$name' o'rnatishda xatolik yuz berdi" \
       "Quyidagi buyruq muvaffaqiyatsiz tugadi:" \
       "    $install" \
