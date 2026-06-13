@@ -1,5 +1,5 @@
 @echo off
-REM AI CLI Pult — Windows (cmd.exe / PowerShell) uchun wrapper.
+REM Aidevix CLI — Windows (cmd.exe / PowerShell) uchun wrapper.
 REM Git Bash'ni PATH'dan yoki odatiy o'rnatish joylaridan topadi.
 setlocal
 set "AI_SH=%~dp0ai-selector.sh"

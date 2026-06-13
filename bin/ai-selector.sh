@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# ai-selector.sh — AI CLI Pult'ning asosiy skripti (buyruq: `ai`).
+# ai-selector.sh — Aidevix CLI'ning asosiy skripti (buyruq: `aidevix`).
 #
 # Vazifasi: config/agents.conf faylidan AI CLI agentlarini o'qiydi, ularni
 # FZF interfeysi (yoki oddiy raqamli menyu) orqali ko'rsatadi va tanlangan
@@ -8,13 +8,13 @@
 # o'zi o'rnatadi.
 #
 # Foydalanish:
-#   ai              # interaktiv menyu
-#   ai claude       # to'g'ridan-to'g'ri agentni nomi/binari bo'yicha ishga tushirish
-#   ai --list       # agentlar ro'yxati + holati
-#   ai --update     # o'rnatilgan agentlarni yangilash
-#   ai --doctor     # muhitni tekshirish
-#   ai --add        # interaktiv yangi agent qo'shish
-#   ai --help       # yordam
+#   aidevix              # interaktiv menyu
+#   aidevix claude       # to'g'ridan-to'g'ri agentni nomi/binari bo'yicha ishga tushirish
+#   aidevix --list       # agentlar ro'yxati + holati
+#   aidevix --update     # o'rnatilgan agentlarni yangilash
+#   aidevix --doctor     # muhitni tekshirish
+#   aidevix --add        # interaktiv yangi agent qo'shish
+#   aidevix --help       # yordam
 #
 # Exit kodlari:
 #   0   — muvaffaqiyat (yoki foydalanuvchi bekor qildi)
@@ -69,15 +69,15 @@ trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
 # --- Yordam matni ---------------------------------------------------------
 usage() {
   cat <<'EOF'
-AI CLI Pult — terminaldagi AI CLI agentlarini bitta menyudan boshqaring.
+Aidevix CLI — terminaldagi AI CLI agentlarini bitta menyudan boshqaring.
 
 FOYDALANISH:
-  ai [TANLOV | AGENT]
+  aidevix [TANLOV | AGENT]
 
 TANLOVLAR:
   (argumentsiz)   Interaktiv menyuni ochadi (fzf bo'lsa fzf, bo'lmasa raqamli)
   AGENT           Agentni nomi yoki binari bo'yicha to'g'ridan-to'g'ri ishga tushiradi
-                  (masalan: `ai claude`, `ai gemini`)
+                  (masalan: `aidevix claude`, `aidevix gemini`)
   -l, --list      Agentlar ro'yxati va holatini ko'rsatadi
   -u, --update    O'rnatilgan barcha agentlarni yangilaydi
   -d, --doctor    Muhitni tekshiradi (node/npm/python/fzf, PATH, agentlar)
@@ -255,11 +255,12 @@ preview_agent() {
 # Chiqish formati: KO'RINISH\tNAME  (NAME — qidirish uchun yashirin maydon)
 build_menu() {
   local rows="$1" last="$2"
-  awk -F'\t' -v last="$last" -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" '
+  awk -F'\t' -v last="$last" -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
+            -v t="${C_TITLE:-}" -v gy="${C_GRAY:-}" -v b="${C_BOLD:-}" '
     {
       name=$1; desc=$2; status=$7;
       if (status ~ /✓/) { icon = g "✓" z } else { icon = r "✗" z }
-      disp = sprintf("%s  %-18s %s", icon, name, desc)
+      disp = sprintf("%s  %s%s%-16s%s %s%s%s", icon, b, t, name, z, gy, desc, z)
       line = disp "\t" name
       if (name == last && last != "") { first = line }
       else { rest[++n] = line }
@@ -279,13 +280,14 @@ select_with_fzf() {
       | fzf --ansi \
             --delimiter='\t' \
             --with-nth=1 \
-            --prompt='  ' \
+            --prompt='  qidirish › ' \
             --pointer='▶' \
             --marker='✓' \
-            --height=85% \
+            --height=~90% \
             --layout=reverse \
             --border=rounded \
-            --border-label=' 🤖 AI CLI Pult ' \
+            --border-label=' ✦ Aidevix CLI ' \
+            --border-label-pos=3 \
             --margin=1,2 \
             --padding=1 \
             --info=inline \
@@ -378,7 +380,7 @@ launch_selected() {
   launch_agent "$name" "$binary" "$command"
 }
 
-# --- Tezkor ishga tushirish: `ai <nom-yoki-binary>` -----------------------
+# --- Tezkor ishga tushirish: `aidevix <nom-yoki-binary>` ------------------
 quick_launch() {
   local query="$1"
   local config; config="$(resolve_config)"
@@ -393,7 +395,7 @@ quick_launch() {
     name="$(awk -F'\t' -v q="$query" 'BEGIN{ql=tolower(q)}
               index(tolower($1),ql) || index(tolower($3),ql) { print $1; exit }' <<<"$rows")"
   fi
-  [[ -n "$name" ]] || die 2 "Mos agent topilmadi: '$query'. Ro'yxat uchun: ai --list"
+  [[ -n "$name" ]] || die 2 "Mos agent topilmadi: '$query'. Ro'yxat uchun: aidevix --list"
 
   launch_selected "$rows" "$name"
 }
@@ -438,7 +440,7 @@ ensure_installed() {
       "" \
       "👉 $(tool_hint "$tool")" \
       "" \
-      "Shuni o'rnatib, terminalni qayta oching va yana \"ai\" deb yozing."
+      "Shuni o'rnatib, terminalni qayta oching va yana \"aidevix\" deb yozing."
     die 127 "'$tool' topilmadi — '$name' o'rnatilmadi."
   fi
 
@@ -480,9 +482,9 @@ ensure_installed() {
       "Bu odatda \"PATH\" sozlamasi yangilanmagani uchun bo'ladi." \
       "" \
       "👉 Yechimi oson: terminalni butunlay yopib, qaytadan oching," \
-      "   so'ng yana \"ai\" deb yozing — endi ishlaydi." \
+      "   so'ng yana \"aidevix\" deb yozing — endi ishlaydi." \
       "" \
-      "Agar shunda ham yordam bermasa: \"ai --doctor\" buyrug'i muammoni ko'rsatadi."
+      "Agar shunda ham yordam bermasa: \"aidevix --doctor\" buyrug'i muammoni ko'rsatadi."
     die 127 "'$binary' hali PATH'da ko'rinmayapti — terminalni qayta oching."
   fi
   log_success "O'rnatildi: $name"
@@ -532,7 +534,7 @@ update_agents() {
 
 # --- Muhit tashxisi (doctor) ----------------------------------------------
 doctor() {
-  banner "AI CLI — TASHXIS" "muhitingizni tekshiramiz"
+  banner "Aidevix — Tashxis" "muhitingizni tekshiramiz"
 
   local tool
   printf '%sVositalar:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
@@ -554,7 +556,7 @@ doctor() {
       if [[ ":$PATH:" == *":$bindir:"* ]]; then
         printf '  %b✓%b PATH ichida: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$bindir"
       else
-        printf '  %b✗%b PATH da YO''Q: %s  (ai uni o'\''zi qo'\''shadi)\n' "${C_YELLOW:-}" "${C_RESET:-}" "$bindir"
+        printf '  %b✗%b PATH da YO''Q: %s  (aidevix uni o'\''zi qo'\''shadi)\n' "${C_YELLOW:-}" "${C_RESET:-}" "$bindir"
       fi
     done
   else

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# uninstall.sh — AI CLI Pult'ni olib tashlaydi.
+# uninstall.sh — Aidevix CLI'ni olib tashlaydi.
 #
 # Nima qiladi:
 #   1. .bashrc/.zshrc/.profile'dagi ai-cli blokini (avval zaxira olib) olib tashlaydi.
-#   2. ~/.local/bin/ai symlink'ini o'chiradi.
+#   2. ~/.local/bin/aidevix symlink'ini o'chiradi.
 #   3. Foydalanuvchi konfiguratsiyasini o'chirishni TAKLIF qiladi (so'ramasdan o'chirmaydi).
 #
 # Exit kodlari: 0 — muvaffaqiyat, 1 — xato.
@@ -28,7 +28,7 @@ trap 'die 1 "O\047chirish xato bilan to\047xtadi (qator: $LINENO)."' ERR
 
 readonly USER_CONFIG_DIR="$HOME/.config/ai-cli"
 readonly BIN_DIR="$HOME/.local/bin"
-readonly CMD_LINK="$BIN_DIR/ai"
+readonly CMD_LINK="$BIN_DIR/aidevix"
 readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ai-cli"
 readonly MARK_BEGIN="# >>> ai-cli (boshlanish) >>>"
 readonly MARK_END="# <<< ai-cli (oxir) <<<"
@@ -51,7 +51,7 @@ remove_block_from() {
 }
 
 main() {
-  printf '\n%s🧹 AI CLI Pult — o\047chirish%s\n\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '\n%s🧹 Aidevix CLI — o\047chirish%s\n\n' "${C_BOLD:-}" "${C_RESET:-}"
 
   remove_block_from "$HOME/.bashrc"
   remove_block_from "$HOME/.zshrc"

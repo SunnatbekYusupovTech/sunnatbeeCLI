@@ -8,12 +8,12 @@
 
 ---
 
-## ⚡ Eng birinchi qadam — `ai --doctor`
+## ⚡ Eng birinchi qadam — `aidevix --doctor`
 
-Aksariyat muammolarni `ai` o'zi topadi. Terminalga shuni yozing:
+Aksariyat muammolarni `aidevix` o'zi topadi. Terminalga shuni yozing:
 
 ```bash
-ai --doctor
+aidevix --doctor
 ```
 
 U sizga ko'rsatadi:
@@ -27,7 +27,7 @@ U sizga ko'rsatadi:
 
 ## 📋 Mundarija
 
-1. [`ai` buyrug'i topilmadi (`command not found`)](#1-ai-buyrugi-topilmadi)
+1. [`aidevix` buyrug'i topilmadi (`command not found`)](#1-aidevix-buyrugi-topilmadi)
 2. [AI CLI o'rnatildi, lekin ishga tushmayapti](#2-cli-ornatildi-lekin-ishga-tushmayapti)
 3. [Har safar "o'rnatish" so'rayapti](#3-har-safar-ornatish-sorayapti)
 4. ["npm topilmadi" yoki "node topilmadi"](#4-npm-yoki-node-topilmadi)
@@ -39,11 +39,11 @@ U sizga ko'rsatadi:
 
 ---
 
-## 1. `ai` buyrug'i topilmadi
+## 1. `aidevix` buyrug'i topilmadi
 
-> `bash: ai: command not found`
+> `bash: aidevix: command not found`
 
-**Nima bo'lgan?** Terminal `ai` buyrug'i qayerdaligini hali bilmaydi.
+**Nima bo'lgan?** Terminal `aidevix` buyrug'i qayerdaligini hali bilmaydi.
 
 **Yechim — terminalni qaytadan oching.** Ko'pincha shu yetadi. Bo'lmasa:
 
@@ -66,9 +66,9 @@ bash ~/.ai-cli/install.sh
 
 **Nima bo'lgan?** Dastur o'rnatildi, lekin terminal uni hali "ko'rmayapti" (`PATH` yangilanmagan).
 
-**Yechim:** Terminalni **butunlay yopib**, qaytadan oching. So'ng yana `ai` deb yozing.
+**Yechim:** Terminalni **butunlay yopib**, qaytadan oching. So'ng yana `aidevix` deb yozing.
 
-> ✅ `ai` endi paket-menejer papkalarini o'zi topadi, shuning uchun bu kamdan-kam uchraydi. Agar uchrasa — `ai --doctor` aniq sababini ko'rsatadi.
+> ✅ `aidevix` endi paket-menejer papkalarini o'zi topadi, shuning uchun bu kamdan-kam uchraydi. Agar uchrasa — `aidevix --doctor` aniq sababini ko'rsatadi.
 
 ---
 
@@ -78,7 +78,7 @@ bash ~/.ai-cli/install.sh
 
 **Nima bo'lgan?** Dastur o'rnatilgan, ammo uning papkasi `PATH`'da emas edi.
 
-**Yechim:** Bu muammo **yangi versiyada tuzatilgan** — `ai` endi har ishga tushganda npm/pip papkalarini avtomatik qo'shadi. Eski o'rnatmani yangilang:
+**Yechim:** Bu muammo **yangi versiyada tuzatilgan** — `aidevix` endi har ishga tushganda npm/pip papkalarini avtomatik qo'shadi. Eski o'rnatmani yangilang:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
@@ -98,7 +98,7 @@ So'ng terminalni qayta oching.
 1. 🌐 [https://nodejs.org](https://nodejs.org) saytiga kiring
 2. Katta yashil **"LTS"** tugmasini bosib yuklab oling
 3. Faylni ochib, **Next → Next → Finish** bilan o'rnating
-4. Terminalni qayta oching va yana `ai` deb yozing
+4. Terminalni qayta oching va yana `aidevix` deb yozing
 
 ---
 
@@ -163,7 +163,7 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 
 > Chiroyli izlanadigan menyu o'rniga oddiy `1) 2) 3)` ro'yxati chiqyapti.
 
-**Nima bo'lgan?** `fzf` o'rnatilmagan. **Bu xato emas** — `ai` shunchaki oddiy menyuga o'tdi.
+**Nima bo'lgan?** `fzf` o'rnatilmagan. **Bu xato emas** — `aidevix` shunchaki oddiy menyuga o'tdi.
 
 **Chiroyli menyu xohlasangiz** `fzf`'ni o'rnating:
 
@@ -179,6 +179,6 @@ winget install fzf        # Windows
 
 ### Yechim topilmadimi?
 
-[**Yangi muammo (issue) oching**](https://github.com/SUNNATBEE/sunnatbeeCLI/issues) — xato matnini va `ai --doctor` natijasini ilova qiling.
+[**Yangi muammo (issue) oching**](https://github.com/SUNNATBEE/sunnatbeeCLI/issues) — xato matnini va `aidevix --doctor` natijasini ilova qiling.
 
 </div>

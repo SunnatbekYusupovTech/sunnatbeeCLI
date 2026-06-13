@@ -1,10 +1,12 @@
 <div align="center">
 
-# 🤖 AI CLI Pult
+<img src="assets/log.jpg" alt="Aidevix logosi" width="120" />
+
+# ✦ Aidevix CLI
 
 ### *Bitta buyruq. 10 ta professional AI CLI. Cheksiz imkoniyat.*
 
-`ai` deb yozing → ro'yxatdan tanlang → CLI avtomatik ishga tushadi.
+`aidevix` deb yozing → ro'yxatdan tanlang → CLI avtomatik ishga tushadi.
 O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
 [![Shell](https://img.shields.io/badge/shell-bash%20%7C%20zsh-1f425f.svg?logo=gnu-bash&logoColor=white)](#)
@@ -18,7 +20,7 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
 ## 📖 Loyiha haqida
 
-**AI CLI Pult** — terminaldagi 10 ta professional AI CLI agentini (Claude Code,
+**Aidevix CLI** — terminaldagi 10 ta professional AI CLI agentini (Claude Code,
 Aider, Codex, Gemini, Copilot va h.k.) yagona interaktiv menyu orqali bitta
 buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlaydi.
 
@@ -32,20 +34,20 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 
 | | Imkoniyat | Tavsif |
 |---|---|---|
-| 🎨 | **Professional dizayn** | Gradientli banner, jonli **spinner** animatsiyasi, rangli preview — toza va zamonaviy |
+| 🎨 | **Professional dizayn** | AD logosi + gradientli banner, jonli **spinner** animatsiyasi, rangli preview — toza va zamonaviy |
 | ⚡ | **Bir buyruq bilan o'rnatish** | `curl ... \| bash` — qolgani avtomatik |
-| 🎛️ | **Yagona `ai` menyusi** | 10 ta AI CLI bitta interaktiv ro'yxatda (status + preview) |
+| 🎛️ | **Yagona `aidevix` menyusi** | 10 ta AI CLI bitta interaktiv ro'yxatda (status + preview) |
 | 🪄 | **Avtomatik o'rnatish** | Tanlangan CLI yo'q bo'lsa — ruxsat so'rab o'zi o'rnatadi |
-| 🚀 | **Tezkor ishga tushirish** | `ai claude` — menyusiz, to'g'ridan-to'g'ri |
+| 🚀 | **Tezkor ishga tushirish** | `aidevix claude` — menyusiz, to'g'ridan-to'g'ri |
 | 🕘 | **Oxirgi tanlovni eslaydi** | Eng so'nggi ishlatilgan agent ro'yxat tepasida |
-| 🔢 | **fzf'siz ham ishlaydi** | fzf yo'q bo'lsa — oddiy raqamli menyuga o'tadi |
-| ♻️ | **`ai --update`** | O'rnatilgan barcha agentlarni bir buyruq bilan yangilaydi |
-| 🩺 | **`ai --doctor`** | Muhitni (node/npm/python/fzf, PATH) tekshiradi |
-| ➕ | **`ai --add`** | Interaktiv tarzda yangi agent qo'shadi (faylni qo'lda tahrirlamasdan) |
+| 🪄 | **fzf avtomatik o'rnatiladi** | O'rnatishda fzf'ni o'zi yuklab oladi (sudo kerak emas); bo'lmasa raqamli menyuga o'tadi |
+| ♻️ | **`aidevix --update`** | O'rnatilgan barcha agentlarni bir buyruq bilan yangilaydi |
+| 🩺 | **`aidevix --doctor`** | Muhitni (node/npm/python/fzf, PATH) tekshiradi |
+| ➕ | **`aidevix --add`** | Interaktiv tarzda yangi agent qo'shadi (faylni qo'lda tahrirlamasdan) |
 | 🧭 | **PATH avtomatik tuzatish** | npm/pip global bin papkasini o'zi topadi — yangi kompyuterda ham ishlaydi |
 | 🩺 | **Tushunarli xato xabarlari** | Xato bo'lsa — sababini va yechimini **oddiy tilda** aytadi (bolalar ham tushunadi) |
-| ⌨️ | **Shell completion** | `ai <TAB>` agent nomlarini to'ldiradi (bash/zsh) |
-| 🪟 | **Windows wrapper** | `ai.cmd` / `ai.ps1` — PowerShell/cmd'dan ham ishlaydi |
+| ⌨️ | **Shell completion** | `aidevix <TAB>` agent nomlarini to'ldiradi (bash/zsh) |
+| 🪟 | **Windows wrapper** | `aidevix.cmd` / `aidevix.ps1` — PowerShell/cmd'dan ham ishlaydi |
 | 🔌 | **Kengaytiriluvchi** | Yangi agent qo'shish — kod yozmasdan, bitta qator |
 | 🛡️ | **Xavfsiz** | `.bashrc`/`.zshrc` o'zgartirishdan oldin **zaxiralanadi** |
 | 🧹 | **Toza o'chirish** | `uninstall.sh` hammasini izsiz qaytaradi |
@@ -106,8 +108,8 @@ O'rnatishdan oldin kompyuteringizda quyidagilar bo'lishi kerak:
 |---|:---:|---|---|
 | **git** | ✅ Ha | Loyihani yuklab olish uchun | [git-scm.com/downloads](https://git-scm.com/downloads) |
 | **curl** yoki **wget** | ✅ Ha | O'rnatuvchini yuklab olish | macOS/Linux'da odatda bor; Windows'da Git Bash bilan keladi |
-| **fzf** | ⭐ Ixtiyoriy | Chiroyli izlanadigan menyu | Yo'q bo'lsa ham ishlaydi (raqamli menyu) |
-| **Node.js / Python** | ❌ Yo'q | Faqat tanlangan AI CLI uchun | `ai` keraklisini o'zi taklif qiladi |
+| **fzf** | 🪄 Avtomatik | Chiroyli izlanadigan menyu | O'rnatuvchi **o'zi yuklab oladi** (sudo kerak emas) |
+| **Node.js / Python** | ❌ Yo'q | Faqat tanlangan AI CLI uchun | `aidevix` keraklisini o'zi taklif qiladi |
 
 > 🪟 **Windows foydalanuvchilari diqqat!** Bu vosita **Git Bash** ichida ishlaydi.
 > Avval [**Git for Windows**](https://git-scm.com/download/win) ni o'rnating
@@ -148,18 +150,19 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 > ❓ **"bash" topilmadi degan xato?** Demak siz `cmd` yoki PowerShell'dasiz.
 > Ularni yoping va **Git Bash** dasturini oching — buyruq o'sha oynada ishlaydi.
 
-> 💡 **Windows'da `ai` buyrug'ini ishlatish:** o'rnatishdan keyin `ai` Git Bash'da
-> darrov ishlaydi. PowerShell/cmd'da ham ishlashi uchun `%USERPROFILE%\.local\bin`
-> papkasini Windows **PATH**'iga qo'shing (yoki shunchaki Git Bash'dan foydalaning).
+> 💡 **Windows'da `aidevix` buyrug'ini ishlatish:** o'rnatishdan keyin `aidevix`
+> Git Bash'da darrov ishlaydi. PowerShell/cmd'da ham ishlashi uchun
+> `%USERPROFILE%\.local\bin` papkasini Windows **PATH**'iga qo'shing (yoki
+> shunchaki Git Bash'dan foydalaning).
 
 ---
 
 Yuqoridagi buyruq qaysi terminalda bo'lsa ham, hamma narsani **avtomatik** bajaradi:
 
 1. 📥 Loyihani `~/.ai-cli` papkasiga yuklab oladi
-2. 🔍 Kerakli dasturlarni tekshiradi (`fzf` ixtiyoriy)
+2. 🔍 Kerakli dasturlarni tekshiradi va **`fzf`'ni avtomatik o'rnatadi** (chiroyli menyu uchun)
 3. 💾 `~/.bashrc` / `~/.zshrc` faylini **zaxiralaydi** (xavfsizlik uchun)
-4. 🔗 `ai` buyrug'ini o'rnatadi (+ Windows uchun `ai.cmd` / `ai.ps1`)
+4. 🔗 `aidevix` buyrug'ini o'rnatadi (+ Windows uchun `aidevix.cmd` / `aidevix.ps1`)
 5. ⚙️ Agentlar ro'yxatini `~/.config/ai-cli/` ga ko'chiradi
 6. ⌨️ `PATH` va avtomatik to'ldirishni (completion) sozlaydi
 
@@ -181,8 +184,8 @@ O'rnatish tugagach, **terminalni butunlay yopib, qaytadan oching**
 (yoki `source ~/.bashrc`). So'ng tekshiring:
 
 ```bash
-ai --doctor     # muhit to'g'ri sozlanganini tekshiradi
-ai              # menyuni ochadi 🎉
+aidevix --doctor     # muhit to'g'ri sozlanganini tekshiradi
+aidevix              # menyuni ochadi 🎉
 ```
 
 ✅ Menyu ochildimi? Tabriklaymiz — tayyor! Endi istalgan AI CLI'ni tanlang.
@@ -192,12 +195,12 @@ ai              # menyuni ochadi 🎉
 > 📌 **Eslatma:** repozitoriyaning standart branchi `master` bo'lsa, URL'dagi
 > `main` so'zini `master` ga almashtiring.
 >
-> 🩺 **Muammo chiqdimi?** Avval **`ai --doctor`** ni ishga tushiring — u muammoni
-> topib, oddiy tilda nima qilish kerakligini aytadi. To'liq qo'llanma:
+> 🩺 **Muammo chiqdimi?** Avval **`aidevix --doctor`** ni ishga tushiring — u
+> muammoni topib, oddiy tilda nima qilish kerakligini aytadi. To'liq qo'llanma:
 > [**TROUBLESHOOTING.md**](./TROUBLESHOOTING.md).
 
 <details>
-<summary><b>fzf'ni qanday o'rnatish kerak? (ixtiyoriy, lekin tavsiya etiladi)</b></summary>
+<summary><b>fzf qo'lda o'rnatish (agar avtomatik o'rnatilmasa)</b></summary>
 
 ```bash
 brew install fzf            # macOS
@@ -213,16 +216,22 @@ winget install fzf          # Windows
 ## 🎮 Foydalanish (Usage)
 
 ```bash
-ai
+aidevix
 ```
 
 ```text
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🤖  AI CLI PULT
-  barcha AI agentlar — bitta buyruq
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     █████╗ ██████╗
+    ██╔══██╗██╔══██╗
+    ███████║██║  ██║
+    ██╔══██║██║  ██║
+    ██║  ██║██████╔╝
+    ╚═╝  ╚═╝╚═════╝
 
-╭─ 🤖 AI CLI Pult ───────────────────────────────────────────╮
+  ✦  Aidevix CLI
+  barcha AI agentlar — bitta pultda
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╭─ ✦ Aidevix CLI ────────────────────────────────────────────╮
 │                                          ╭── tafsilot ────╮ │
 │ ▶ ✓  Claude Code     🧠 Claude CLI       │ Claude Code    │ │
 │   ✓  Aider           🤝 pair programming │ ───────────    │ │
@@ -251,7 +260,7 @@ CLI o'rnatilayotganda quruq kutish o'rniga — aylanuvchi **spinner** va o'tgan 
 
 ### 🪄 Avtomatik o'rnatish
 
-Agar tanlangan CLI tizimda yo'q bo'lsa, `ai` shunchaki xato bermaydi — u o'zi
+Agar tanlangan CLI tizimda yo'q bo'lsa, `aidevix` shunchaki xato bermaydi — u o'zi
 o'rnatishni taklif qiladi:
 
 ```text
@@ -267,15 +276,15 @@ o'rnatishni taklif qiladi:
 
 | Buyruq | Vazifasi |
 |---|---|
-| `ai` | Interaktiv menyuni ochadi (fzf bo'lsa fzf + preview, bo'lmasa raqamli) |
-| `ai <agent>` | Agentni nomi/binari bo'yicha **to'g'ridan-to'g'ri** ishga tushiradi (masalan `ai claude`) |
-| `ai --list` | Barcha CLI'lar va ularning **o'rnatilgan/yo'q** holatini ko'rsatadi |
-| `ai --update` | O'rnatilgan barcha agentlarni yangilaydi |
-| `ai --doctor` | Muhitni tekshiradi (vositalar, PATH, agentlar holati) |
-| `ai --add` | Interaktiv tarzda yangi agent qo'shadi |
-| `ai --help` | Yordam matnini chiqaradi |
+| `aidevix` | Interaktiv menyuni ochadi (fzf bo'lsa fzf + preview, bo'lmasa raqamli) |
+| `aidevix <agent>` | Agentni nomi/binari bo'yicha **to'g'ridan-to'g'ri** ishga tushiradi (masalan `aidevix claude`) |
+| `aidevix --list` | Barcha CLI'lar va ularning **o'rnatilgan/yo'q** holatini ko'rsatadi |
+| `aidevix --update` | O'rnatilgan barcha agentlarni yangilaydi |
+| `aidevix --doctor` | Muhitni tekshiradi (vositalar, PATH, agentlar holati) |
+| `aidevix --add` | Interaktiv tarzda yangi agent qo'shadi |
+| `aidevix --help` | Yordam matnini chiqaradi |
 
-> 💡 `ai <TAB>` — agent nomlarini avtomatik to'ldiradi (o'rnatishdan keyin).
+> 💡 `aidevix <TAB>` — agent nomlarini avtomatik to'ldiradi (o'rnatishdan keyin).
 
 ---
 
@@ -290,7 +299,7 @@ Eng kuchli tomoni — **kod yozish shart emas**. Agentlar oddiy matnli faylda:
 Eng oson yo'li — interaktiv qo'shuvchi:
 
 ```bash
-ai --add
+aidevix --add
 ```
 
 Yoki qo'lda — har bir agent **bitta qator**, `|` bilan ajratilgan **5 majburiy + 1
@@ -323,7 +332,7 @@ Continue|cn|cn|npm install -g @continuedev/cli|🔁 Continue terminal agenti|Cod
 > ...|bash -c "$(curl -fsSL https://example.com/install.sh)"|...
 > ```
 
-Saqlang — keyingi `ai` ishga tushishida agent menyuda paydo bo'ladi. 🎉
+Saqlang — keyingi `aidevix` ishga tushishida agent menyuda paydo bo'ladi. 🎉
 
 > 🔧 **Muhit o'zgaruvchilari:**
 > | O'zgaruvchi | Vazifasi |
@@ -340,8 +349,8 @@ Saqlang — keyingi `ai` ishga tushishida agent menyuda paydo bo'ladi. 🎉
 bash ~/.ai-cli/uninstall.sh
 ```
 
-Bu `.bashrc`/`.zshrc` blokini (zaxira olib) olib tashlaydi va `ai` buyrug'ini
-o'chiradi. Konfiguratsiyani esa xohlasangiz qo'lda o'chirasiz:
+Bu `.bashrc`/`.zshrc` blokini (zaxira olib) olib tashlaydi va `aidevix`
+buyrug'ini o'chiradi. Konfiguratsiyani esa xohlasangiz qo'lda o'chirasiz:
 
 ```bash
 rm -rf ~/.config/ai-cli ~/.ai-cli
@@ -352,21 +361,23 @@ rm -rf ~/.config/ai-cli ~/.ai-cli
 ## 📂 Loyiha tuzilmasi
 
 ```text
-ai-cli/
+aidevix-cli/
 ├── README.md             # Ushbu hujjat
 ├── TROUBLESHOOTING.md    # Muammolar va sodda yechimlar
 ├── LICENSE               # MIT
 ├── bootstrap.sh          # Bir buyruq bilan o'rnatuvchi (curl | bash)
 ├── install.sh            # Asosiy o'rnatuvchi (zaxira + symlink + completion)
 ├── uninstall.sh          # Toza o'chiruvchi
+├── assets/
+│   └── log.jpg           # Aidevix "AD" logosi
 ├── bin/
-│   ├── ai-selector.sh    # `ai` buyrug'i — menyu + avtomatik o'rnatish
-│   ├── ai.cmd            # Windows (cmd.exe) wrapper
-│   └── ai.ps1            # Windows (PowerShell) wrapper
+│   ├── ai-selector.sh    # `aidevix` buyrug'i — menyu + avtomatik o'rnatish
+│   ├── aidevix.cmd       # Windows (cmd.exe) wrapper
+│   └── aidevix.ps1       # Windows (PowerShell) wrapper
 ├── lib/
 │   └── common.sh         # Umumiy funksiyalar (log, rang, xato boshqaruvi)
 ├── completions/
-│   └── ai.bash           # `ai` uchun bash/zsh avtomatik to'ldirish
+│   └── aidevix.bash      # `aidevix` uchun bash/zsh avtomatik to'ldirish
 └── config/
     └── agents.conf       # Agentlar ro'yxati
 ```

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# bootstrap.sh — AI CLI Pult'ni BITTA BUYRUQ bilan o'rnatish.
+# bootstrap.sh — Aidevix CLI'ni BITTA BUYRUQ bilan o'rnatish.
 #
 # Foydalanish (o'quvchilar uchun):
 #   curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
@@ -47,11 +47,11 @@ fi
 
 if [[ -t 2 && -z "${NO_COLOR:-}" ]]; then
   printf '\n  \033[38;5;51m━━━━━━━━━━━━━━━\033[38;5;39m━━━━━━━━━━━━━━━\033[38;5;201m━━━━━━━━━━━━━━━━\033[0m\n' >&2
-  printf '  \033[1m🤖  \033[38;5;87mAI CLI PULT\033[0m\n' >&2
+  printf '  \033[1m✦  \033[38;5;87mAidevix CLI\033[0m\n' >&2
   printf '  \033[90mbitta buyruq bilan o'\''rnatish\033[0m\n' >&2
   printf '  \033[38;5;201m━━━━━━━━━━━━━━━\033[38;5;39m━━━━━━━━━━━━━━━\033[38;5;51m━━━━━━━━━━━━━━━━\033[0m\n\n' >&2
 else
-  printf '\n🤖 AI CLI Pult — bitta buyruq bilan o\047rnatish\n\n' >&2
+  printf '\n✦ Aidevix CLI — bitta buyruq bilan o\047rnatish\n\n' >&2
 fi
 
 # --- 2) Klonlash yoki yangilash -------------------------------------------

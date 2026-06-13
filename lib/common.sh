@@ -46,9 +46,17 @@ if [[ "$UI_TTY" -eq 1 ]]; then
   C_G3=$'\033[38;5;39m'   # ko'k
   C_G4=$'\033[38;5;201m'  # pushti
   C_TITLE=$'\033[38;5;87m'
+  # AD logosi uchun cyan→ko'k→pushti gradient (6 qator)
+  C_LG1=$'\033[38;5;51m'
+  C_LG2=$'\033[38;5;45m'
+  C_LG3=$'\033[38;5;39m'
+  C_LG4=$'\033[38;5;33m'
+  C_LG5=$'\033[38;5;99m'
+  C_LG6=$'\033[38;5;201m'
 else
   C_RESET='' C_RED='' C_GREEN='' C_YELLOW='' C_BLUE='' C_MAGENTA='' C_CYAN=''
   C_GRAY='' C_DIM='' C_BOLD='' C_G1='' C_G2='' C_G3='' C_G4='' C_TITLE=''
+  C_LG1='' C_LG2='' C_LG3='' C_LG4='' C_LG5='' C_LG6=''
 fi
 
 # Animatsiya: rang yoniq bo'lsa va aniq o'chirilmagan bo'lsa.
@@ -144,26 +152,46 @@ hr() {
 }
 
 # banner [sarlavha] [kichik-sarlavha]
-#   Gradientli, animatsiyali sarlavha. TTY bo'lmasa — oddiy matn.
+#   Aidevix CLI brendi: AD monogrammasi (gradient) + harfma-harf animatsiya.
+#   TTY bo'lmasa — oddiy matn. assets/log.jpg dagi "AD" logosining ASCII shakli.
 banner() {
-  local title="${1:-AI CLI PULT}" subtitle="${2:-barcha AI agentlar — bitta buyruq}"
+  local title="${1:-Aidevix CLI}" subtitle="${2:-barcha AI agentlar — bitta pultda}"
   if [[ "${UI_TTY:-0}" -ne 1 ]]; then
     printf '\n  %s\n  %s\n\n' "$title" "$subtitle" >&2
     return 0
   fi
 
-  local s1 s2 s3
-  s1="$(hr 15)"; s2="$(hr 15)"; s3="$(hr 16)"
-
   printf '\n' >&2
-  printf '  %s%s%s%s%s%s%s\n' "$C_G1" "$s1" "$C_G3" "$s2" "$C_G4" "$s3" "$C_RESET" >&2
 
-  printf '  %s🤖  ' "$C_BOLD" >&2
+  # --- AD logosi (assets/log.jpg ASCII shakli) ---------------------------
+  if [[ "${UI_UTF8:-1}" -eq 1 ]]; then
+    local -a logo=(
+'    █████╗ ██████╗ '
+'   ██╔══██╗██╔══██╗'
+'   ███████║██║  ██║'
+'   ██╔══██║██║  ██║'
+'   ██║  ██║██████╔╝'
+'   ╚═╝  ╚═╝╚═════╝ '
+    )
+    local -a grad=("$C_LG1" "$C_LG2" "$C_LG3" "$C_LG4" "$C_LG5" "$C_LG6")
+    local k
+    for k in "${!logo[@]}"; do
+      printf '%s%s%s%s\n' "$C_BOLD" "${grad[k]}" "${logo[k]}" "$C_RESET" >&2
+      [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.045 || true
+    done
+  else
+    printf '%s    /\\  ___ %s\n' "$C_G1" "$C_RESET" >&2
+    printf '%s   /__\\ |  |%s\n' "$C_G3" "$C_RESET" >&2
+    printf '%s        |__|%s\n' "$C_G4" "$C_RESET" >&2
+  fi
+
+  # --- Sarlavha — harfma-harf "yozilish" animatsiyasi --------------------
+  printf '\n  %s✦  ' "$C_BOLD" >&2
   if [[ "${AI_ANIM:-0}" -eq 1 ]]; then
     local j
     for ((j = 0; j < ${#title}; j++)); do
       printf '%s%s' "$C_TITLE" "${title:j:1}" >&2
-      sleep 0.022
+      sleep 0.03
     done
     printf '%s\n' "$C_RESET" >&2
   else
@@ -171,7 +199,10 @@ banner() {
   fi
 
   printf '  %s%s%s\n' "$C_GRAY" "$subtitle" "$C_RESET" >&2
-  printf '  %s%s%s%s%s%s%s\n\n' "$C_G4" "$s1" "$C_G3" "$s2" "$C_G1" "$s3" "$C_RESET" >&2
+
+  local s1 s2
+  s1="$(hr 18)"; s2="$(hr 18)"
+  printf '  %s%s%s%s%s\n\n' "$C_G1" "$s1" "$C_G4" "$s2" "$C_RESET" >&2
 }
 
 # SPIN_LOG — oxirgi spin_run chiqishi shu faylda saqlanadi (xatoni ko'rsatish uchun).

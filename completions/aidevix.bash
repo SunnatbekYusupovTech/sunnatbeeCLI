@@ -1,4 +1,4 @@
-# bash/zsh uchun `ai` buyrug'i avtomatik to'ldirilishi.
+# bash/zsh uchun `aidevix` buyrug'i avtomatik to'ldirilishi.
 #
 # Yoqish:
 #   • bash: ushbu faylni ~/.bashrc dan `source` qiling.
@@ -34,4 +34,4 @@ _ai_complete() {
   COMPREPLY=( $(compgen -W "$flags $names" -- "$cur") )
 }
 
-complete -F _ai_complete ai
+complete -F _ai_complete aidevix

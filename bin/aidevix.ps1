@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# AI CLI Pult — PowerShell uchun wrapper.
+# Aidevix CLI — PowerShell uchun wrapper.
 # Git Bash'ni PATH'dan yoki odatiy o'rnatish joylaridan topadi.
 $ErrorActionPreference = 'Stop'
 $script = Join-Path $PSScriptRoot 'ai-selector.sh'
