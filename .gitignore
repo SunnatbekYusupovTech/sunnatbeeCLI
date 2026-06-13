@@ -2,6 +2,7 @@
 .aider*
 
 # Shell rc zaxiralari (test paytida yaratilishi mumkin)
+*.aicli-backup-*
 *.aipult-backup-*
 
 # OS / muharrir
