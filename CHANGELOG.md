@@ -17,9 +17,11 @@ Birinchi barqaror (production) nashr. 🎉
   Aider, Goose, Ollama, llm, AIChat — barchasi `@latest` versiya bilan.
 - **Login/auth belgisi** — har bir agent uchun qaysi login yoki API kalit
   kerakligi (🔑/🌐/💳/🆓) menyu preview'sida, `--list`da va menyu qatorida.
-- **Login havolasi** — har agentга login/kalit sahifasi linki; agent ilk bor
-  ishga tushganda u **brauzerда avtomatik ochiladi** (bir martalik, kalitlar
-  saqlanmaydi).
+- **Login havolasi** — har agentга login/kalit sahifasi linki. Brauzer **faqat
+  zarur bo'lganda** ochiladi: agent o'zingiz API kalit (🔑) olishingizni talab
+  qilsa va kalit hali muhitda yo'q bo'lsa. Brauzer-login (🌐), obuna (💳), bepul
+  (🆓) yoki kalit allaqachon bor bo'lsa — brauzer ochilmaydi, faqat qisqa
+  eslatma. (Bir martalik; kalitlar saqlanmaydi.)
 - **`aidevix --free`** — faqat bepul agentlar menyusi (Gemini, Qwen, Ollama,
   Continue). **`aidevix --top`** — faqat eng mashhur agentlar.
 - **`aidevix --version`** — versiyani ko'rsatadi (`VERSION` faylidan o'qiladi).

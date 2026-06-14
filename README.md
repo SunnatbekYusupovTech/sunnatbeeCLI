@@ -308,9 +308,11 @@ kalit** talab qiladi. Aidevix buni siz uchun soddalashtiradi:
 
 - 📋 Menyuda har agent yonida belgi (🆓/🔑/🌐/💳), preview'da to'liq login talabi
   va **havola** ko'rinadi.
-- 🌐 Agentni **birinchi marta** ishga tushirganingizda — login/kalit haqida
-  qisqa eslatma chiqadi va **login/kalit sahifasi brauzerда avtomatik ochiladi**
-  (bir martalik).
+- 🌐 Login sahifasi brauzerда **faqat zarur bo'lganda** ochiladi — ya'ni agent
+  o'zingiz API kalit olishingizni talab qilsa **va** o'sha kalit hali
+  o'rnatilmagan bo'lsa. Agar agent o'zi login qilsa (brauzer-login), obuna yoki
+  bepul bo'lsa, **yoki kalit allaqachon bor bo'lsa** — brauzer ochilmaydi, faqat
+  qisqa eslatma chiqadi.
 - 🔒 Kalitlarni o'zingiz, agentning o'z ko'rsatmasi bo'yicha kiritasiz. **Aidevix
   hech qanday parol yoki kalitni ko'rmaydi va saqlamaydi** — ular faqat sizning
   kompyuteringizda qoladi.

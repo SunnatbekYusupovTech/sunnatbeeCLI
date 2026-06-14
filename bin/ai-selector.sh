@@ -140,36 +140,61 @@ save_last() {
 # Agent AUTH maydoniga ega bo'lsa va u ilk bor ishga tushirilayotgan bo'lsa,
 # foydalanuvchiga login/API kalit kerakligini SODDA tilda bir marta aytamiz.
 # Kalitlarni biz saqlamaymiz — bu faqat ogohlantirish.
+# should_open_login_link <auth> — login sahifasini brauzerda ochish KERAKMI?
+#   Ha (0) — FAQAT agent "o'zingiz API kalit oling" (🔑) talab qilsa VA o'sha
+#   kalit muhitda hali yo'q bo'lsa. Ya'ni agentni ishlatib bo'lmaydi → loginga
+#   yo'naltiramiz.
+#   Yo'q (1) — agar:
+#     • agent brauzer orqali login (🌐), obuna (💳) yoki bepul (🆓) bo'lsa
+#       (bularda agentning o'zi login qiladi yoki login shart emas), YOKI
+#     • tegishli API kalit allaqachon o'rnatilgan bo'lsa (agent ishlab ketadi).
+should_open_login_link() {
+  local auth="$1"
+  case "$auth" in
+    *🌐*|*🆓*|*💳*) return 1 ;;   # agent o'zi hal qiladi / bepul
+  esac
+  [[ "$auth" == *🔑* ]] || return 1   # API kalit umuman talab qilinmaydi
+
+  # Kalit allaqachon muhitda bormi? Bo'lsa — agent ishlaydi, link shart emas.
+  local v vars common
+  vars="$(printf '%s' "$auth" | grep -oE '[A-Z][A-Z0-9_]*(_API_KEY|_TOKEN|_KEY)' 2>/dev/null || true)"
+  common="ANTHROPIC_API_KEY OPENAI_API_KEY GEMINI_API_KEY GOOGLE_API_KEY OPENROUTER_API_KEY GROQ_API_KEY DEEPSEEK_API_KEY MISTRAL_API_KEY"
+  for v in $vars $common; do
+    [[ -n "${!v:-}" ]] && return 1
+  done
+  return 0   # 🔑 kerak, lekin kalit yo'q → loginga yo'naltiramiz
+}
+
 maybe_show_auth_note() {
   local name="$1" auth="$2" url="${3:-}"
   [[ -n "$auth" || -n "$url" ]] || return 0
   if [[ -r "$SEEN_AUTH_FILE" ]] && grep -qxF "$name" "$SEEN_AUTH_FILE" 2>/dev/null; then
     return 0
   fi
-  if [[ -n "$url" ]]; then
-    panel "🔐 '$name' — birinchi ishga tushirish" \
-      "Bu agent ishlashi uchun quyidagi kerak bo'lishi mumkin:" \
-      "    ${auth:-login yoki API kalit}" \
-      "" \
-      "🌐 Login/kalit sahifasi brauzerda ochilmoqda:" \
-      "    $url" \
-      "" \
-      "👉 O'sha sahifada login qiling yoki API kalit oling, so'ng agent" \
-      "   ko'rsatmasiga amal qiling. Kalitlar SIZning kompyuteringizda qoladi;" \
-      "   Aidevix ularni ko'rmaydi va saqlamaydi."
-    open_url "$url"
-  else
-    panel "🔐 '$name' — birinchi ishga tushirish" \
-      "Bu agent ishlashi uchun quyidagi kerak bo'lishi mumkin:" \
-      "    $auth" \
-      "" \
-      "👉 Birinchi marta ochilganda agent o'zi login yoki API kalitni so'raydi —" \
-      "   ekrandagi ko'rsatmaga amal qiling. Kalitlar SIZning kompyuteringizda" \
-      "   saqlanadi; Aidevix ularni ko'rmaydi va saqlamaydi."
-  fi
   mkdir -p "$STATE_DIR" 2>/dev/null || true
   printf '%s\n' "$name" >>"$SEEN_AUTH_FILE" 2>/dev/null || true
-  [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.8 || true
+
+  if [[ -n "$url" ]] && should_open_login_link "$auth"; then
+    # Login/registratsiya kerak — sahifani brauzerda ochamiz.
+    panel "🔐 '$name' — login/kalit kerak" \
+      "Bu agentni ishlatish uchun API kalit kerak:" \
+      "    $auth" \
+      "" \
+      "🌐 Kalit olish sahifasi brauzerda ochilmoqda:" \
+      "    $url" \
+      "" \
+      "👉 Kalitni oling va agent ko'rsatmasiga amal qiling. Aidevix kalitni" \
+      "   ko'rmaydi va saqlamaydi — u faqat sizning kompyuteringizda qoladi."
+    open_url "$url"
+    [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.8 || true
+  elif [[ -n "$auth" ]]; then
+    # Alohida loginga yo'naltirish SHART EMAS (kalit bor, agent o'zi login
+    # qiladi, yoki bepul) — faqat qisqa eslatma beramiz, brauzer ochmaymiz.
+    panel "🔐 '$name' — eslatma" \
+      "Login talabi: $auth" \
+      "👉 Agar agent login so'rasa, ekrandagi ko'rsatmaga amal qiling."
+    [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.4 || true
+  fi
 }
 
 # --- PATH'ni keng tarqalgan paket-menejer bin papkalari bilan boyitish -----
