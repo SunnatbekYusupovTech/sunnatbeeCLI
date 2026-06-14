@@ -1,0 +1,36 @@
+name: ✨ Imkoniyat yoki yangi agent taklifi
+description: Yangi xususiyat yoki qo'shilishi kerak bo'lgan AI CLI agentini taklif qiling
+title: "[Taklif]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Taklif turi
+      options:
+        - Yangi AI CLI agenti qo'shish
+        - Mavjud imkoniyatni yaxshilash
+        - Butunlay yangi imkoniyat
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Taklifingiz
+      description: Nimani qo'shish/o'zgartirish kerakligini tushuntiring.
+    validations:
+      required: true
+
+  - type: input
+    id: agent-line
+    attributes:
+      label: "Agent qatori (agar yangi agent bo'lsa)"
+      description: "Format: NAME|BINARY|COMMAND|INSTALL|DESCRIPTION|CATEGORY|AUTH"
+      placeholder: "Continue|cn|cn|npm install -g @continuedev/cli@latest|🔁 Continue agenti|Coding|🌐 login"
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Nima uchun foydali?
+      description: Bu o'zgarish kimga va qanday yordam beradi?

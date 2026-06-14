@@ -36,6 +36,9 @@ PROJECT_ROOT="$(cd -P "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
 # Preview kabi qism-jarayonlar uchun skriptning to'liq yo'li.
 SELF="$SCRIPT_DIR/$(basename "$SCRIPT_SOURCE")"
 
+# Versiya — VERSION faylidan o'qiladi (bo'lmasa quyidagi zaxira qiymat).
+AIDEVIX_VERSION="$(cat "$PROJECT_ROOT/VERSION" 2>/dev/null || echo "1.0.0")"
+
 # Foydalanuvchi konfiguratsiyasi ustun, bo'lmasa repodagisi.
 USER_CONFIG="${AI_PULT_CONFIG:-$HOME/.config/ai-cli/agents.conf}"
 REPO_CONFIG="$PROJECT_ROOT/config/agents.conf"
@@ -43,6 +46,8 @@ REPO_CONFIG="$PROJECT_ROOT/config/agents.conf"
 # Oxirgi tanlangan agentni eslab qolish uchun holat fayli.
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ai-cli"
 STATE_FILE="$STATE_DIR/last"
+# Login/auth eslatmasi qaysi agentlar uchun allaqachon ko'rsatilganini saqlaydi.
+SEEN_AUTH_FILE="$STATE_DIR/seen_auth"
 
 # Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
 DEFAULT_CATEGORY="AI"
@@ -82,6 +87,7 @@ TANLOVLAR:
   -u, --update    O'rnatilgan barcha agentlarni yangilaydi
   -d, --doctor    Muhitni tekshiradi (node/npm/python/fzf, PATH, agentlar)
   -a, --add       Interaktiv tarzda yangi agent qo'shadi
+  -v, --version   Aidevix CLI versiyasini ko'rsatadi
   -h, --help      Ushbu yordam matnini ko'rsatadi
 
 KONFIGURATSIYA:
@@ -126,6 +132,28 @@ read_last() { [[ -r "$STATE_FILE" ]] && cat "$STATE_FILE" 2>/dev/null || true; }
 save_last() {
   mkdir -p "$STATE_DIR" 2>/dev/null || return 0
   printf '%s\n' "$1" >"$STATE_FILE" 2>/dev/null || true
+}
+
+# --- Birinchi ishga tushirishda login/auth yo'riqnomasi --------------------
+# Agent AUTH maydoniga ega bo'lsa va u ilk bor ishga tushirilayotgan bo'lsa,
+# foydalanuvchiga login/API kalit kerakligini SODDA tilda bir marta aytamiz.
+# Kalitlarni biz saqlamaymiz — bu faqat ogohlantirish.
+maybe_show_auth_note() {
+  local name="$1" auth="$2"
+  [[ -n "$auth" ]] || return 0
+  if [[ -r "$SEEN_AUTH_FILE" ]] && grep -qxF "$name" "$SEEN_AUTH_FILE" 2>/dev/null; then
+    return 0
+  fi
+  panel "🔐 '$name' — birinchi ishga tushirish" \
+    "Bu agent ishlashi uchun quyidagi kerak bo'lishi mumkin:" \
+    "    $auth" \
+    "" \
+    "👉 Birinchi marta ochilganda agent o'zi login yoki API kalitni so'raydi —" \
+    "   ekrandagi ko'rsatmaga amal qiling. Kalitlar SIZning kompyuteringizda" \
+    "   saqlanadi; Aidevix ularni ko'rmaydi va saqlamaydi."
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  printf '%s\n' "$name" >>"$SEEN_AUTH_FILE" 2>/dev/null || true
+  [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.6 || true
 }
 
 # --- PATH'ni keng tarqalgan paket-menejer bin papkalari bilan boyitish -----
@@ -195,26 +223,27 @@ augment_tool_path() {
 # Chiqish formati: NAME\tDESC\tBINARY\tCOMMAND\tINSTALL\tCATEGORY
 parse_agents() {
   local config="$1"
-  local line name binary command install desc category lineno=0 found=0
+  local line name binary command install desc category auth lineno=0 found=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     lineno=$((lineno + 1))
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
     [[ "$line" =~ ^[[:space:]]*$ ]] && continue
 
-    IFS='|' read -r name binary command install desc category <<<"$line"
+    IFS='|' read -r name binary command install desc category auth <<<"$line"
     name="$(trim "${name:-}")"
     binary="$(trim "${binary:-}")"
     command="$(trim "${command:-}")"
     install="$(trim "${install:-}")"
     desc="$(trim "${desc:-}")"
     category="$(trim "${category:-}")"
+    auth="$(trim "${auth:-}")"
     [[ -z "$category" ]] && category="$DEFAULT_CATEGORY"
 
     if [[ -z "$name" || -z "$binary" || -z "$command" ]]; then
       log_warn "Noto'g'ri qator o'tkazib yuborildi (#$lineno): $line"
       continue
     fi
-    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$desc" "$binary" "$command" "$install" "$category"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$desc" "$binary" "$command" "$install" "$category" "$auth"
     found=1
   done <"$config"
 
@@ -224,15 +253,16 @@ parse_agents() {
 # --- Holat ustuni bilan to'ldirilgan qatorlar -----------------------------
 # Chiqish formati: NAME\tDESC\tBINARY\tCOMMAND\tINSTALL\tCATEGORY\tSTATUS
 build_rows() {
-  local config="$1" name desc binary command install category status
-  while IFS=$'\t' read -r name desc binary command install category; do
+  local config="$1" name desc binary command install category auth status
+  while IFS=$'\t' read -r name desc binary command install category auth; do
     if command -v "$binary" >/dev/null 2>&1; then
       status="✓ o'rnatilgan"
     else
       status="✗ yo'q"
     fi
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-      "$name" "$desc" "$binary" "$command" "$install" "$category" "$status"
+    # Maydon tartibi: status 7-, auth 8- (preview/menu $7 status'ga tayanadi).
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$name" "$desc" "$binary" "$command" "$install" "$category" "$status" "$auth"
   done < <(parse_agents "$config")
 }
 
@@ -240,12 +270,12 @@ build_rows() {
 list_agents() {
   local config; config="$(resolve_config)"
   log_info "Konfiguratsiya: $config"
-  printf '\n%s%-20s %-14s %-10s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "KATEGORIYA" "IZOH" "$C_RESET"
-  printf '%s\n' "----------------------------------------------------------------------"
-  local name desc binary command install category status icon color
-  while IFS=$'\t' read -r name desc binary command install category status; do
+  printf '\n%s%-18s %-14s %-9s %-34s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "GURUH" "IZOH" "LOGIN" "$C_RESET"
+  printf '%s\n' "------------------------------------------------------------------------------------------"
+  local name desc binary command install category status auth color
+  while IFS=$'\t' read -r name desc binary command install category status auth; do
     if [[ "$status" == *"✓"* ]]; then color="$C_GREEN"; else color="$C_RED"; fi
-    printf '%-20s %b%-14s%b %-10s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "$desc"
+    printf '%-18s %b%-14s%b %-9s %-34s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "$desc" "$auth"
   done < <(build_rows "$config")
 }
 
@@ -275,6 +305,7 @@ preview_agent() {
       print "  " GY "Binar     " R $3
       print "  " GY "Buyruq    " R MG $4 R
       print "  " GY "Kategoriya" R $6
+      print "  " GY "Login     " R ($8 == "" ? GY "—" R : $8)
       print ""
       print "  " GY "O\47rnatish:" R
       print "    " ($5 == "" ? GY "(belgilanmagan)" R : $5)
@@ -401,16 +432,18 @@ run_menu() {
 # --- Tanlangan agentni ishga tushirish ------------------------------------
 launch_selected() {
   local rows="$1" name="$2"
-  local row binary command install
+  local row binary command install auth
   row="$(awk -F'\t' -v n="$name" '$1 == n { print; exit }' <<<"$rows")"
   [[ -n "$row" ]] || die 1 "Tanlangan agent topilmadi: $name"
 
   binary="$(printf '%s'  "$row" | cut -f3)"
   command="$(printf '%s' "$row" | cut -f4)"
   install="$(printf '%s' "$row" | cut -f5)"
+  auth="$(printf '%s'    "$row" | cut -f8)"
 
   save_last "$name"
   ensure_installed "$name" "$binary" "$install"
+  maybe_show_auth_note "$name" "$auth"
   launch_agent "$name" "$binary" "$command"
 }
 
@@ -565,10 +598,10 @@ update_agents() {
   local config; config="$(resolve_config)"
   log_info "Konfiguratsiya: $config"
   local rows; rows="$(build_rows "$config")"
-  local name desc binary command install category status
+  local name desc binary command install category status auth
   local checked=0 ok=0 fail=0
 
-  while IFS=$'\t' read -r name desc binary command install category status; do
+  while IFS=$'\t' read -r name desc binary command install category status auth; do
     command -v "$binary" >/dev/null 2>&1 || continue
     checked=$((checked + 1))
     if [[ -z "$install" ]]; then
@@ -697,14 +730,15 @@ main() {
   augment_tool_path
 
   case "${1:-}" in
-    -h|--help)    usage ;;
-    -l|--list)    list_agents ;;
-    -u|--update)  update_agents ;;
-    -d|--doctor)  doctor ;;
-    -a|--add)     add_agent ;;
-    "")           run_menu ;;
-    -*)           log_error "Noma'lum tanlov: $1"; echo; usage; exit 2 ;;
-    *)            quick_launch "$1" ;;
+    -h|--help)     usage ;;
+    -v|--version)  printf 'Aidevix CLI %s\n' "$AIDEVIX_VERSION" ;;
+    -l|--list)     list_agents ;;
+    -u|--update)   update_agents ;;
+    -d|--doctor)   doctor ;;
+    -a|--add)      add_agent ;;
+    "")            run_menu ;;
+    -*)            log_error "Noma'lum tanlov: $1"; echo; usage; exit 2 ;;
+    *)             quick_launch "$1" ;;
   esac
 }
 

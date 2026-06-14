@@ -4,11 +4,13 @@
 
 # ✦ Aidevix CLI
 
-### *Bitta buyruq. 10 ta professional AI CLI. Cheksiz imkoniyat.*
+### *Bitta buyruq. 15 ta top AI CLI. Cheksiz imkoniyat.*
 
 `aidevix` deb yozing → ro'yxatdan tanlang → CLI avtomatik ishga tushadi.
 O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
+[![CI](https://github.com/SUNNATBEE/sunnatbeeCLI/actions/workflows/ci.yml/badge.svg)](https://github.com/SUNNATBEE/sunnatbeeCLI/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/SUNNATBEE/sunnatbeeCLI?label=version&color=8a2be2)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases)
 [![Shell](https://img.shields.io/badge/shell-bash%20%7C%20zsh-1f425f.svg?logo=gnu-bash&logoColor=white)](#)
 [![Powered by fzf](https://img.shields.io/badge/powered%20by-fzf-00b894.svg)](https://github.com/junegunn/fzf)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -20,8 +22,8 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
 ## 📖 Loyiha haqida
 
-**Aidevix CLI** — terminaldagi 10 ta professional AI CLI agentini (Claude Code,
-Aider, Codex, Gemini, Copilot va h.k.) yagona interaktiv menyu orqali bitta
+**Aidevix CLI** — terminaldagi 15 ta top AI CLI agentini (Claude Code, Codex,
+Gemini, Copilot, Aider, Ollama va h.k.) yagona interaktiv menyu orqali bitta
 buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlaydi.
 
 > 🎓 Bu loyiha **o'quvchilar uchun** maxsus tuzilgan: ular bitta buyruq bilan
@@ -36,8 +38,9 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 |---|---|---|
 | 🎨 | **Professional dizayn** | AD logosi + gradientli banner, jonli **spinner** animatsiyasi, rangli preview — toza va zamonaviy |
 | ⚡ | **Bir buyruq bilan o'rnatish** | `curl ... \| bash` — qolgani avtomatik |
-| 🎛️ | **Yagona `aidevix` menyusi** | 10 ta AI CLI bitta interaktiv ro'yxatda (status + preview) |
+| 🎛️ | **Yagona `aidevix` menyusi** | 15 ta top AI CLI bitta interaktiv ro'yxatda (status + preview) |
 | 🪄 | **Avtomatik o'rnatish** | Tanlangan CLI yo'q bo'lsa — ruxsat so'rab o'zi o'rnatadi |
+| 🔐 | **Login yo'riqnomasi** | Har agent uchun qaysi login/API kalit kerakligi ko'rsatiladi; kalitlar saqlanmaydi |
 | 🚀 | **Tezkor ishga tushirish** | `aidevix claude` — menyusiz, to'g'ridan-to'g'ri |
 | 🕘 | **Oxirgi tanlovni eslaydi** | Eng so'nggi ishlatilgan agent ro'yxat tepasida |
 | 🪄 | **fzf avtomatik o'rnatiladi** | O'rnatishda fzf'ni o'zi yuklab oladi (sudo kerak emas); bo'lmasa raqamli menyuga o'tadi |
@@ -56,20 +59,27 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 
 ## 🤖 Qo'llab-quvvatlanadigan AI CLI agentlar
 
-| # | Agent | Buyruq | Tavsif |
-|---|---|---|---|
-| 1 | 🧠 Claude Code | `claude` | Anthropic'ning rasmiy Claude CLI |
-| 2 | 🤝 Aider | `aider` | AI juftlik dasturlash (pair programming) |
-| 3 | ⚡ OpenAI Codex | `codex` | OpenAI Codex terminal agenti |
-| 4 | ✨ Gemini CLI | `gemini` | Google Gemini terminal agenti |
-| 5 | 🐙 GitHub Copilot | `copilot` | GitHub Copilot CLI |
-| 6 | 🦢 Goose | `goose` | Block'ning lokal AI agenti |
-| 7 | 🟢 OpenCode | `opencode` | Ochiq manbali terminal coding agenti |
-| 8 | 💅 Crush | `crush` | Charm'ning AI coding agenti |
-| 9 | 🐉 Qwen Code | `qwen` | Alibaba Qwen Code CLI |
-| 10 | 🎯 Cursor Agent | `cursor-agent` | Cursor'ning terminal agenti |
+| # | Agent | Buyruq | Guruh | Login |
+|---|---|---|---|---|
+| 1 | 🧠 Claude Code | `claude` | Coding | 🔑 / 💳 |
+| 2 | ⚡ OpenAI Codex | `codex` | Coding | 🌐 / 🔑 |
+| 3 | ✨ Gemini CLI | `gemini` | Coding | 🌐 / 🔑 |
+| 4 | 🐙 GitHub Copilot | `copilot` | Coding | 💳 |
+| 5 | 🟢 OpenCode | `opencode` | Coding | 🔑 |
+| 6 | 💅 Crush | `crush` | Coding | 🔑 |
+| 7 | 🐉 Qwen Code | `qwen` | Coding | 🌐 / 🔑 |
+| 8 | 🔁 Continue | `cn` | Coding | 🌐 / 🔑 |
+| 9 | 🎯 Cursor Agent | `cursor-agent` | Coding | 🌐 |
+| 10 | 🗺️ Plandex | `plandex` | Coding | 🌐 / 🔑 |
+| 11 | 🤝 Aider | `aider` | Pair | 🔑 |
+| 12 | 🦢 Goose | `goose` | Agent | 🔑 |
+| 13 | 🦙 Ollama | `ollama` | Local | 🆓 |
+| 14 | 💬 llm | `llm` | Chat | 🔑 |
+| 15 | 🗨️ AIChat | `aichat` | Chat | 🔑 |
 
+> **Login belgilari:** 🔑 API kalit · 🌐 brauzer orqali login · 💳 obuna · 🆓 bepul (login shart emas).
 > Ro'yxat `config/agents.conf`'da — istalgancha o'zgartirish/qo'shish mumkin.
+> ⚠️ Cursor Agent hozircha Windows'da ishlamaydi (rasmiy installeri faqat macOS/Linux).
 
 ---
 
@@ -282,9 +292,36 @@ o'rnatishni taklif qiladi:
 | `aidevix --update` | O'rnatilgan barcha agentlarni yangilaydi |
 | `aidevix --doctor` | Muhitni tekshiradi (vositalar, PATH, agentlar holati) |
 | `aidevix --add` | Interaktiv tarzda yangi agent qo'shadi |
+| `aidevix --version` | Aidevix CLI versiyasini ko'rsatadi |
 | `aidevix --help` | Yordam matnini chiqaradi |
 
 > 💡 `aidevix <TAB>` — agent nomlarini avtomatik to'ldiradi (o'rnatishdan keyin).
+
+---
+
+## 🔐 Login / API kalitlar
+
+Ko'pchilik AI CLI'lar ishlashidan oldin **hisobga kirish (login)** yoki **API
+kalit** talab qiladi. Aidevix buni siz uchun soddalashtiradi:
+
+- 📋 Menyuda har agent yonida (preview'da) va `aidevix --list`da **qaysi login
+  kerakligi** ko'rsatiladi.
+- 🔔 Agentni **birinchi marta** ishga tushirganingizda — login/kalit haqida
+  qisqa, tushunarli **bir martalik eslatma** chiqadi.
+- 🔒 Kalitlarni o'zingiz, agentning o'z ko'rsatmasi bo'yicha kiritasiz. **Aidevix
+  hech qanday parol yoki kalitni ko'rmaydi va saqlamaydi** — ular faqat sizning
+  kompyuteringizda qoladi.
+
+| Belgi | Ma'nosi | Misol |
+|:---:|---|---|
+| 🔑 | **API kalit** kerak | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, OpenRouter |
+| 🌐 | **Brauzer orqali login** | Google / ChatGPT / Cursor hisobi |
+| 💳 | **Obuna** kerak | GitHub Copilot, Claude Pro/Max |
+| 🆓 | **Bepul** — login shart emas | Ollama (lokal modellar) |
+
+> 💡 Masalan, Claude Code'ni tanlasangiz, u birinchi ishga tushganda
+> `ANTHROPIC_API_KEY` so'raydi yoki brauzerda Claude hisobingizga kirishni
+> taklif qiladi — ekrandagi ko'rsatmaga amal qiling.
 
 ---
 
@@ -364,10 +401,18 @@ rm -rf ~/.config/ai-cli ~/.ai-cli
 aidevix-cli/
 ├── README.md             # Ushbu hujjat
 ├── TROUBLESHOOTING.md    # Muammolar va sodda yechimlar
+├── CHANGELOG.md          # O'zgarishlar tarixi (SemVer)
+├── CONTRIBUTING.md       # Hissa qo'shish qo'llanmasi
+├── CODE_OF_CONDUCT.md    # Xulq-atvor kodeksi
+├── VERSION               # Joriy versiya (masalan 1.0.0)
 ├── LICENSE               # MIT
 ├── bootstrap.sh          # Bir buyruq bilan o'rnatuvchi (curl | bash)
 ├── install.sh            # Asosiy o'rnatuvchi (zaxira + symlink + completion)
 ├── uninstall.sh          # Toza o'chiruvchi
+├── .github/              # CI, release, issue/PR shablonlari
+│   ├── workflows/        #   ci.yml (shellcheck) · release.yml
+│   ├── ISSUE_TEMPLATE/   #   bug / feature shablonlari
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── assets/
 │   └── log.jpg           # Aidevix "AD" logosi
 ├── bin/
@@ -379,16 +424,21 @@ aidevix-cli/
 ├── completions/
 │   └── aidevix.bash      # `aidevix` uchun bash/zsh avtomatik to'ldirish
 └── config/
-    └── agents.conf       # Agentlar ro'yxati
+    └── agents.conf       # Agentlar ro'yxati (15 ta top AI CLI)
 ```
 
 ---
 
 ## 🤝 Hissa qo'shish
 
-PR'lar mamnuniyat bilan! Fork → branch → commit → Pull Request.
-Shell skriptlarini [shellcheck](https://www.shellcheck.net/) bilan
-tekshirib yuborganingiz — alohida rahmat. 🙏
+PR'lar mamnuniyat bilan! To'liq qo'llanma: [**CONTRIBUTING.md**](./CONTRIBUTING.md).
+
+Qisqacha: Fork → branch → commit ([Conventional Commits](https://www.conventionalcommits.org/))
+→ Pull Request. Yangi AI CLI qo'shish eng oson hissa — `config/agents.conf` oxiriga
+bitta qator. Shell skriptlarini [shellcheck](https://www.shellcheck.net/) bilan
+tekshirib yuborganingiz — alohida rahmat (CI buni avtomatik tekshiradi). 🙏
+
+Loyihada qatnashuvchilar [Xulq-atvor kodeksi](./CODE_OF_CONDUCT.md)ga amal qiladi.
 
 ---
 

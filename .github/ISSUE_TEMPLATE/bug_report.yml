@@ -1,0 +1,56 @@
+name: 🐛 Xato haqida xabar (Bug report)
+description: Ishlamayotgan narsani xabar qiling
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rahmat! Iltimos, quyidagilarni to'ldiring — bu muammoni tez topishga yordam beradi.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Nima bo'ldi?
+      description: Muammoni qisqacha tasvirlang.
+      placeholder: "Masalan: 'aidevix' menyusida Gemini'ni tanlasam, ishga tushmayapti."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Qanday takrorlash mumkin?
+      description: Qadamlarni ketma-ket yozing.
+      placeholder: |
+        1. 'aidevix' deb yozdim
+        2. Gemini'ni tanladim
+        3. Xato chiqdi
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`aidevix --doctor` natijasi"
+      description: Terminalga `aidevix --doctor` yozib, natijani shu yerga joylashtiring.
+      render: shell
+
+  - type: textarea
+    id: error
+    attributes:
+      label: To'liq xato matni
+      description: Agar xato chiqqan bo'lsa, uni to'liq nusxalang.
+      render: shell
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operatsion tizim
+      options:
+        - Windows (Git Bash)
+        - Linux
+        - macOS
+        - Boshqa
+    validations:
+      required: true

@@ -1,0 +1,42 @@
+# O'zgarishlar tarixi (Changelog)
+
+Barcha muhim o'zgarishlar shu faylda hujjatlanadi.
+
+Format [Keep a Changelog](https://keepachangelog.com/uz/1.1.0/) asosida,
+loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qiladi.
+
+## [Nashr qilinmagan]
+
+## [1.0.0] — 2026-06-14
+
+Birinchi barqaror (production) nashr. 🎉
+
+### Qo'shildi
+- **Saralangan 15 ta top AI CLI agenti** — Claude Code, OpenAI Codex, Gemini CLI,
+  GitHub Copilot, OpenCode, Crush, Qwen Code, Continue, Cursor Agent, Plandex,
+  Aider, Goose, Ollama, llm, AIChat — barchasi `@latest` versiya bilan.
+- **Login/auth belgisi** — har bir agent uchun qaysi login yoki API kalit
+  kerakligi (🔑/🌐/💳/🆓) menyu preview'sida va `--list`da ko'rsatiladi.
+- **Birinchi ishga tushirish yo'riqnomasi** — agent ilk bor ochilganda login
+  haqida bir martalik, tushunarli eslatma (kalitlar saqlanmaydi).
+- **`aidevix --version`** — versiyani ko'rsatadi (`VERSION` faylidan o'qiladi).
+- **fzf avtomatik o'rnatish** — o'rnatishda fzf GitHub releases'dan yuklab
+  olinadi (sudo kerak emas), bo'lmasa paket-menejer.
+- **AD logosi + animatsiyali banner** — "Aidevix CLI" brendi.
+- **CI (ShellCheck), CHANGELOG, CONTRIBUTING, issue/PR shablonlari va
+  release avtomatlashtirish** — open-source standartlari.
+
+### O'zgartirildi
+- Buyruq nomi `ai` → **`aidevix`**.
+- Brend `AI CLI Pult` → **Aidevix CLI**.
+
+### Tuzatildi
+- **Windows/Git Bash'da npm CLI'lar ishga tushmasligi** — PATH'ga Windows-shakl
+  (`C:\Users\...`) yo'l tushib, `:` ajratgich uni buzardi va "Cannot find module
+  C:\Program Files\Git\Users\..." xatosini berardi. Endi yo'llar POSIX shaklga
+  o'tkaziladi va PATH har ishga tushganda tozalanadi (o'z-o'zini davolash).
+- **Qo'llab-quvvatlanmaydigan OS** (masalan Cursor Windows'da) — adashtiruvchi
+  "internet/sudo" o'rniga halol, aniq xabar ko'rsatiladi.
+
+[Nashr qilinmagan]: https://github.com/SUNNATBEE/sunnatbeeCLI/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/SUNNATBEE/sunnatbeeCLI/releases/tag/v1.0.0

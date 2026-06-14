@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: ShellCheck (lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        env:
+          # SC1091 — `source` qilingan faylni CI'da kuzatib bo'lmaydi (runtime'da yuklanadi).
+          SHELLCHECK_OPTS: -e SC1091
+        with:
+          severity: error
+          additional_files: completions/aidevix.bash
+
+  syntax:
+    name: Bash sintaksis tekshiruvi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bash -n (barcha skriptlar)
+        run: |
+          set -e
+          for f in bootstrap.sh install.sh uninstall.sh bin/ai-selector.sh lib/common.sh completions/aidevix.bash; do
+            echo "→ $f"
+            bash -n "$f"
+          done
+          echo "✓ Barcha skriptlar sintaktik to'g'ri."
+
+  config:
+    name: agents.conf validatsiyasi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Har bir agent qatorida 6 ta "|" borligini tekshirish
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r line; do
+            case "$line" in ''|\#*) continue ;; esac
+            n=$(printf '%s' "$line" | tr -cd '|' | wc -c)
+            name=$(printf '%s' "$line" | cut -d'|' -f1)
+            if [ "$n" -ne 6 ]; then
+              echo "::error::Noto'g'ri maydon soni ($n, 6 kerak): $name"
+              fail=1
+            fi
+          done < config/agents.conf
+          [ "$fail" -eq 0 ] && echo "✓ agents.conf formati to'g'ri."

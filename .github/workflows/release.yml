@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: GitHub Release yaratish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: VERSION teg bilan mosligini tekshirish
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(cat VERSION | tr -d '[:space:]')"
+          echo "Teg: $tag · VERSION fayli: $file"
+          if [ "$tag" != "$file" ]; then
+            echo "::error::VERSION ($file) tegga ($tag) mos emas. VERSION faylini yangilang."
+            exit 1
+          fi
+
+      - name: Release yaratish
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Aidevix CLI ${{ github.ref_name }}"
+          generate_release_notes: true
+          body_path: ${{ github.workspace }}/.github/release-intro.md
+          append_body: true
+          files: |
+            bootstrap.sh
+            install.sh
