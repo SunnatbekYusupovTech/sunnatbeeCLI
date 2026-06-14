@@ -103,8 +103,13 @@ fzf_latest_tag() {
 
 download_to() {
   local url="$1" out="$2"
+  # Windows/Git Bash'da curl (schannel) ba'zan sertifikat-otzыv serveriga
+  # ulana olmay "CRYPT_E_NO_REVOCATION_CHECK" xatosini beradi — shu tekshiruvni
+  # o'tkazib yuborish uchun MINGW'da --ssl-no-revoke qo'shamiz.
+  local norevoke=()
+  case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) norevoke=(--ssl-no-revoke) ;; esac
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url" -o "$out"
+    curl "${norevoke[@]}" -fsSL "$url" -o "$out"
   elif command -v wget >/dev/null 2>&1; then
     wget -qO "$out" "$url"
   else
@@ -301,13 +306,21 @@ PS1EOF
 }
 
 # --- 4) Foydalanuvchi konfiguratsiyasi ------------------------------------
+# DIQQAT: repo configni NUSXALAMAYMIZ. Agentlar repo'dan (config/agents.conf)
+# o'qiladi va git orqali yangilanadi; foydalanuvchi configi faqat o'zi qo'shgan
+# QO'SHIMCHA agentlarni saqlaydi. Shu tufayli main'ga push qilingan yangi
+# agentlar avtomatik yangilanishdan keyin hammaga ko'rinadi.
 install_user_config() {
   mkdir -p "$USER_CONFIG_DIR"
   if [[ -e "$USER_CONFIG" ]]; then
-    log_info "Mavjud konfiguratsiya saqlanib qoldi: $USER_CONFIG"
+    log_info "Mavjud foydalanuvchi konfiguratsiyasi saqlanib qoldi: $USER_CONFIG"
   else
-    cp -- "$CONFIG_SRC" "$USER_CONFIG"
-    log_success "Konfiguratsiya o'rnatildi: $USER_CONFIG"
+    {
+      printf '# Aidevix CLI — foydalanuvchi qo\047shgan agentlar\n'
+      printf '# Bu yerga "aidevix --add" yoki qo\047lda yangi agent qo\047shing.\n'
+      printf '# Asosiy ro\047yxat repo\047da: config/agents.conf (avtomatik yangilanadi).\n\n'
+    } >"$USER_CONFIG"
+    log_success "Foydalanuvchi konfiguratsiyasi tayyorlandi: $USER_CONFIG"
   fi
 }
 

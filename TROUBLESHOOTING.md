@@ -36,6 +36,7 @@ U sizga ko'rsatadi:
 7. [O'rnatish yarmida xato berdi](#7-ornatish-yarmida-xato-berdi)
 8. [`bad interpreter` / `'M' is not recognized`](#8-bad-interpreter-yoki-m-xatosi)
 9. [Menyu chiroyli emas (raqamli chiqyapti)](#9-menyu-raqamli-chiqyapti)
+10. [`curl: (35) CRYPT_E_NO_REVOCATION_CHECK` (Windows)](#10-crypt_e_no_revocation_check-windows)
 
 ---
 
@@ -172,6 +173,26 @@ brew install fzf          # macOS
 sudo apt install fzf      # Ubuntu / Debian
 winget install fzf        # Windows
 ```
+
+---
+
+## 10. CRYPT_E_NO_REVOCATION_CHECK (Windows)
+
+> `curl: (35) schannel: ... CRYPT_E_NO_REVOCATION_CHECK ... Функция отзыва не смогла произвести проверку отзыва`
+
+**Nima bo'lgan?** Windows'dagi curl (schannel) saytning sertifikatini tekshirish
+uchun "otzыv" (revocation) serveriga ulanmoqchi bo'ldi, lekin ulana olmadi. Bu
+sizning kompyuteringizdagi xato emas — tarmoq/proksi cheklovi.
+
+**Yechim:** Buyruqqa `--ssl-no-revoke` qo'shing (bu tekshiruvni o'tkazib yuboradi):
+
+```bash
+curl --ssl-no-revoke -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
+```
+
+> 💡 O'rnatishdan keyin **ichki yuklab olishlar** (fzf, agentlar, avtomatik
+> yangilanish) bu muammoni **avtomatik** chetlab o'tadi — qo'shimcha hech narsa
+> qilish shart emas.
 
 ---
 

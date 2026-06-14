@@ -55,9 +55,12 @@ else
 fi
 
 # --- 2) Klonlash yoki yangilash -------------------------------------------
+# http.schannelCheckRevoke=false — Windows git'dagi sertifikat-otzыv xatosini
+# (CRYPT_E_NO_REVOCATION_CHECK) oldini oladi.
+GIT=(git -c http.schannelCheckRevoke=false)
 if [[ -d "$DEST/.git" ]]; then
   info "Mavjud o'rnatma topildi, yangilanmoqda: $DEST"
-  if ! git -C "$DEST" pull --ff-only --quiet; then
+  if ! "${GIT[@]}" -C "$DEST" pull --ff-only --quiet; then
     err "❌ Yangilab bo'lmadi: $DEST"
     err "👉 Internet ulanishini tekshiring yoki shu papkani o'chirib qayta urinib ko'ring:"
     err "   rm -rf \"$DEST\"   (so'ng buyruqni qaytadan ishga tushiring)"
@@ -66,7 +69,7 @@ if [[ -d "$DEST/.git" ]]; then
   ok "Yangilandi."
 else
   info "Repozitoriya klonlanmoqda: $REPO"
-  if ! git clone --depth 1 "$REPO" "$DEST" --quiet; then
+  if ! "${GIT[@]}" clone --depth 1 "$REPO" "$DEST" --quiet; then
     err "❌ Yuklab bo'lmadi: $REPO"
     err "👉 Eng ko'p sabab — internet yo'q yoki manzil noto'g'ri."
     err "   Wi-Fi'ni tekshiring va biroz kutib qaytadan urinib ko'ring."

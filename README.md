@@ -54,6 +54,7 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 | 🚀 | **Tezkor ishga tushirish** | `aidevix claude` — menyusiz, to'g'ridan-to'g'ri |
 | 🕘 | **Oxirgi tanlovni eslaydi** | Eng so'nggi ishlatilgan agent ro'yxat tepasida |
 | 🪄 | **fzf avtomatik o'rnatiladi** | O'rnatishda fzf'ni o'zi yuklab oladi (sudo kerak emas); bo'lmasa raqamli menyuga o'tadi |
+| 🔄 | **Avtomatik yangilanish** | Loyiha yangilansa — `aidevix` o'zini jim yangilaydi va "nima yangilangani"ni ko'rsatadi (qo'lda hech narsa qilish shart emas) |
 | ♻️ | **`aidevix --update`** | O'rnatilgan barcha agentlarni bir buyruq bilan yangilaydi |
 | 🩺 | **`aidevix --doctor`** | Muhitni (node/npm/python/fzf, PATH) tekshiradi |
 | ➕ | **`aidevix --add`** | Interaktiv tarzda yangi agent qo'shadi (faylni qo'lda tahrirlamasdan) |
@@ -179,6 +180,14 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 
 > ❓ **"bash" topilmadi degan xato?** Demak siz `cmd` yoki PowerShell'dasiz.
 > Ularni yoping va **Git Bash** dasturini oching — buyruq o'sha oynada ishlaydi.
+
+> ⚠️ **`curl: (35) ... CRYPT_E_NO_REVOCATION_CHECK` xatosi?** Bu Windows'da curl
+> sertifikat-otzыv serveriga ulana olmaganda chiqadi (internetdagi muammo, sizda
+> emas). Yechimi — buyruqqa `--ssl-no-revoke` qo'shing:
+>
+> ```bash
+> curl --ssl-no-revoke -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
+> ```
 
 > 💡 **Windows'da `aidevix` buyrug'ini ishlatish:** o'rnatishdan keyin `aidevix`
 > Git Bash'da darrov ishlaydi. PowerShell/cmd'da ham ishlashi uchun
@@ -407,6 +416,29 @@ Saqlang — keyingi `aidevix` ishga tushishida agent menyuda paydo bo'ladi. 🎉
 > | `AI_PULT_CONFIG` | Boshqa konfiguratsiya faylini ko'rsatish |
 > | `AI_NO_ANIM=1` | Animatsiyalarni o'chirish (spinner/banner) |
 > | `NO_COLOR=1` | Ranglarni butunlay o'chirish |
+> | `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanishni o'chirish |
+> | `AIDEVIX_UPDATE_INTERVAL` | Yangilanish tekshiruvi oralig'i (sekund, standart 10800 = 3 soat) |
+
+---
+
+## 🔄 Avtomatik yangilanish
+
+`aidevix` **o'zini avtomatik yangilab turadi** — qo'lda hech narsa qilish shart emas.
+Loyihaga yangi imkoniyat yoki agent qo'shilsa (ya'ni `main` branchга push qilinsa),
+keyingi safar `aidevix` ishga tushganda:
+
+```text
+  🔄 Aidevix CLI — yangi versiya topildi, yangilanmoqda...
+  Yangi o'zgarishlar:
+    • feat: 3 yangi bepul agent qo'shildi
+  ✓ Yangilandi! Yangi imkoniyatlar tayyor.
+```
+
+- 🔒 **Xavfsiz:** lokal o'zgarishlaringiz bo'lsa, ular ustidan yozilmaydi.
+- ⏱️ **Tejamkor:** har 3 soatda bir marta tekshiriladi (sozlanadi).
+- 🆕 **Yangi agentlar darrov ko'rinadi:** ro'yxat repo'dan o'qiladi, siz qo'shgan
+  agentlar esa saqlanib qoladi.
+- ⛔ O'chirish: `export AIDEVIX_NO_AUTOUPDATE=1`.
 
 ---
 

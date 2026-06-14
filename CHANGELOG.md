@@ -8,10 +8,24 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 ## [Nashr qilinmagan]
 
 ### Qo'shildi
+- **🔄 Avtomatik yangilanish** — `main`ga push qilingan o'zgarishlar
+  foydalanuvchilarga avtomatik yetadi: `aidevix` ishga tushganda (throttled,
+  3 soat) remote'ni tekshiradi, yangi commit bo'lsa jim yuklab oladi, "nima
+  yangilangani"ni ko'rsatadi va yangi versiyani qayta ishga tushiradi. Lokal
+  o'zgarishlar bo'lsa clobbering qilinmaydi. O'chirish: `AIDEVIX_NO_AUTOUPDATE=1`.
+- **Konfiguratsiya birlashtirildi** — agentlar repo'dan (`config/agents.conf`)
+  o'qiladi (doimo yangi), foydalanuvchi configi faqat o'zi qo'shgan agentlarni
+  saqlaydi. Shu tufayli yangi agentlar/tuzatishlar mavjud foydalanuvchilarga ham
+  darrov ko'rinadi (avval foydalanuvchi nusxasi eski qolib ketardi).
 - **8 ta yangi agent** (jami 23 ta): Open Interpreter, OpenHands, SWE-agent,
   Cline CLI, Kilo CLI, Grok Build, Antigravity, GitHub CLI.
   Ochiq manbali / bepullar `🆓 bepul` statusi bilan belgilandi va
   `aidevix --free`da chiqadi (endi 11+ bepul agent).
+
+### Tuzatildi
+- **Windows curl/git `CRYPT_E_NO_REVOCATION_CHECK` (schannel)** — ichki yuklab
+  olishlar `curl --ssl-no-revoke`, git esa `-c http.schannelCheckRevoke=false`
+  bilan ishlaydi. Boshlang'ich buyruq uchun README/TROUBLESHOOTING'da yechim.
 
 ### Tuzatildi (paket nomlari rasmiy manbalardan tekshirildi)
 - Cline CLI: `cline-cli` → **`cline`** (npm).

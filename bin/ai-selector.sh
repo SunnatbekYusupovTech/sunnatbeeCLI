@@ -39,9 +39,13 @@ SELF="$SCRIPT_DIR/$(basename "$SCRIPT_SOURCE")"
 # Versiya — VERSION faylidan o'qiladi (bo'lmasa quyidagi zaxira qiymat).
 AIDEVIX_VERSION="$(cat "$PROJECT_ROOT/VERSION" 2>/dev/null || echo "1.0.0")"
 
-# Foydalanuvchi konfiguratsiyasi ustun, bo'lmasa repodagisi.
-USER_CONFIG="${AI_PULT_CONFIG:-$HOME/.config/ai-cli/agents.conf}"
+# Repo config — ASOSIY ro'yxat (git orqali doimo yangilanadi).
+# Foydalanuvchi config — faqat o'zi qo'shgan QO'SHIMCHA agentlar.
+# Birlashtirilganda repo ustun turadi (yangi agentlar/tuzatishlar darrov yetadi),
+# foydalanuvchi faqat repo'da YO'Q nomlarni qo'shadi. Shu tufayli main'ga push
+# qilingan o'zgarishlar avtomatik yangilanishdan keyin hammaga ko'rinadi.
 REPO_CONFIG="$PROJECT_ROOT/config/agents.conf"
+USER_CONFIG="$HOME/.config/ai-cli/agents.conf"
 
 # Oxirgi tanlangan agentni eslab qolish uchun holat fayli.
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ai-cli"
@@ -104,14 +108,43 @@ EOF
 }
 
 # --- Ishlatiladigan konfiguratsiyani tanlash ------------------------------
+# AI_PULT_CONFIG aniq berilgan bo'lsa — faqat o'sha (test/maxsus holatlar).
+# Aks holda repo + foydalanuvchi qo'shimchalari birlashtiriladi (repo ustun).
 resolve_config() {
-  if [[ -r "$USER_CONFIG" ]]; then
-    printf '%s\n' "$USER_CONFIG"
-  elif [[ -r "$REPO_CONFIG" ]]; then
-    printf '%s\n' "$REPO_CONFIG"
-  else
-    die 1 "Konfiguratsiya topilmadi. Tekshirildi: '$USER_CONFIG', '$REPO_CONFIG'"
+  if [[ -n "${AI_PULT_CONFIG:-}" && -r "$AI_PULT_CONFIG" ]]; then
+    printf '%s\n' "$AI_PULT_CONFIG"
+    return 0
   fi
+  build_merged_config
+}
+
+# build_merged_config — repo va foydalanuvchi configlarini birlashtirib,
+# vaqtinchalik faylga yozadi va uning yo'lini qaytaradi. Repo agentlari ASOSIY;
+# foydalanuvchi config faqat repo'da bo'lmagan NOMLARNI qo'shadi (o'z agentlari).
+build_merged_config() {
+  [[ -r "$REPO_CONFIG" || -r "$USER_CONFIG" ]] || \
+    die 1 "Konfiguratsiya topilmadi. Tekshirildi: '$REPO_CONFIG', '$USER_CONFIG'"
+
+  local out; out="$(mktemp)"; TMPFILES+=("$out")
+  local repo_names="" line nm
+
+  if [[ -r "$REPO_CONFIG" ]]; then
+    cat "$REPO_CONFIG" >>"$out"
+    repo_names="$(grep -vE '^[[:space:]]*(#|$)' "$REPO_CONFIG" 2>/dev/null \
+                  | cut -d'|' -f1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  fi
+
+  if [[ -r "$USER_CONFIG" && "$USER_CONFIG" != "$REPO_CONFIG" ]]; then
+    printf '\n# --- Foydalanuvchi qo\047shgan agentlar ---\n' >>"$out"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      case "$line" in ''|\#*) continue ;; esac
+      nm="$(printf '%s' "$line" | cut -d'|' -f1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      # Repo'da shu nom bo'lmasagina qo'shamiz (repo ustun turadi).
+      grep -qxF "$nm" <<<"$repo_names" || printf '%s\n' "$line" >>"$out"
+    done <"$USER_CONFIG"
+  fi
+
+  printf '%s\n' "$out"
 }
 
 trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
@@ -780,18 +813,74 @@ add_agent() {
     die 2 "Maydonlar ichida '|' belgisi bo'lmasligi kerak. Bekor qilindi."
   fi
 
-  # Foydalanuvchi konfiguratsiyasiga yozamiz (bo'lmasa yaratamiz).
+  # Foydalanuvchi configi — faqat QO'SHIMCHA agentlar (repo nusxalanmaydi, shunda
+  # repo yangilanganda yangi agentlar avtomatik ko'rinadi). Bo'lmasa yaratamiz.
   mkdir -p "$(dirname "$USER_CONFIG")"
   if [[ ! -e "$USER_CONFIG" ]]; then
-    if [[ -r "$REPO_CONFIG" ]]; then
-      cp -- "$REPO_CONFIG" "$USER_CONFIG"
-    else
-      printf '# Aidevix CLI — foydalanuvchi agentlari\n' >"$USER_CONFIG"
-    fi
+    printf '# Aidevix CLI — foydalanuvchi qo\047shgan agentlar\n# Format: NOM|BINARY|BUYRUQ|INSTALL|IZOH|KATEGORIYA|AUTH|URL\n\n' >"$USER_CONFIG"
   fi
   printf '%s|%s|%s|%s|%s|%s|%s|%s\n' \
     "$name" "$binary" "$command" "$install" "$desc" "$category" "$auth" "$url" >>"$USER_CONFIG"
   log_success "Qo'shildi: $name  →  $USER_CONFIG"
+}
+
+# --- Avtomatik yangilanish (git orqali) -----------------------------------
+# main'ga push qilingan o'zgarishlarni foydalanuvchilarga AVTOMATIK yetkazadi:
+# remote'da yangi commit bo'lsa, jim yuklab oladi, qisqa xabar beradi va yangi
+# versiyani qayta ishga tushiradi. Throttled (standart 3 soat).
+# O'chirish: AIDEVIX_NO_AUTOUPDATE=1 · Oraliq: AIDEVIX_UPDATE_INTERVAL (sekund).
+auto_update() {
+  [[ -n "${AIDEVIX_NO_AUTOUPDATE:-}" || -n "${CI:-}" ]] && return 0
+  [[ -d "$PROJECT_ROOT/.git" ]] || return 0
+  command -v git >/dev/null 2>&1 || return 0
+
+  local stamp="$STATE_DIR/last_update_check" now interval last
+  interval="${AIDEVIX_UPDATE_INTERVAL:-10800}"
+  now="$(date +%s 2>/dev/null || echo 0)"
+  if [[ -r "$stamp" ]]; then
+    last="$(cat "$stamp" 2>/dev/null || echo 0)"; [[ "$last" =~ ^[0-9]+$ ]] || last=0
+    (( now - last < interval )) && return 0
+  fi
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  printf '%s\n' "$now" >"$stamp" 2>/dev/null || true
+
+  # http.schannelCheckRevoke=false — Windows git'dagi sertifikat-otzыv (revocation)
+  # xatosini oldini oladi (CRYPT_E_NO_REVOCATION_CHECK).
+  local g=(git -c http.schannelCheckRevoke=false -C "$PROJECT_ROOT")
+  local branch; branch="$("${g[@]}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+  [[ -z "$branch" || "$branch" == "HEAD" ]] && branch=main
+
+  # Lokal commit qilinmagan o'zgarishlar bo'lsa — ularni clobbering qilmaslik
+  # uchun avtomatik yangilanishni o'tkazib yuboramiz (xavfsizlik).
+  [[ -n "$("${g[@]}" status --porcelain 2>/dev/null)" ]] && return 0
+
+  # FETCH_HEAD — `git fetch origin <branch>` uni har doim yozadi (tracking ref
+  # sozlamasidan qat'i nazar), shuning uchun ishonchli.
+  "${g[@]}" fetch --quiet --depth 1 origin "$branch" 2>/dev/null || return 0
+  local local_sha remote_sha
+  local_sha="$("${g[@]}" rev-parse HEAD 2>/dev/null || true)"
+  remote_sha="$("${g[@]}" rev-parse FETCH_HEAD 2>/dev/null || true)"
+  [[ -n "$local_sha" && -n "$remote_sha" && "$local_sha" != "$remote_sha" ]] || return 0
+
+  printf '\n  %s%s🔄 Aidevix CLI — yangi versiya topildi, yangilanmoqda...%s\n' \
+    "${C_BOLD:-}" "${C_TITLE:-}" "${C_RESET:-}" >&2
+  local subj
+  subj="$("${g[@]}" log --no-merges --pretty='format:    • %s' "HEAD..FETCH_HEAD" 2>/dev/null | head -4 || true)"
+  if [[ -n "$subj" ]]; then
+    printf '  %sYangi o\047zgarishlar:%s\n' "${C_GRAY:-}" "${C_RESET:-}" >&2
+    printf '%s\n' "$subj" >&2
+  fi
+
+  if "${g[@]}" reset --hard --quiet FETCH_HEAD 2>/dev/null; then
+    printf '  %s✓ Yangilandi!%s Yangi imkoniyatlar tayyor.\n\n' "${C_GREEN:-}" "${C_RESET:-}" >&2
+    # Skript ham yangilangan bo'lishi mumkin — yangi versiyani qayta ishga tushiramiz.
+    trap - ERR
+    cleanup 2>/dev/null || true
+    exec bash "$SELF" "$@"
+  fi
+  printf '  %s! Avtomatik yangilab bo\047lmadi%s — keyinroq qayta urinadi.\n\n' \
+    "${C_YELLOW:-}" "${C_RESET:-}" >&2
+  return 0
 }
 
 # --- Argumentlar ----------------------------------------------------------
@@ -803,6 +892,12 @@ main() {
   fi
 
   augment_tool_path
+
+  # Avtomatik yangilanish — tez/meta buyruqlar uchun o'tkazib yuboramiz.
+  case "${1:-}" in
+    -h|--help|-v|--version) : ;;
+    *)                      auto_update "$@" ;;
+  esac
 
   case "${1:-}" in
     -h|--help)     usage ;;
