@@ -329,6 +329,13 @@ install_shell_block() {
     printf '%s\n' 'if command -v npm >/dev/null 2>&1; then'
     printf '%s\n' '  __ai_npm_prefix="$(npm config get prefix 2>/dev/null)"'
     printf '%s\n' '  if [ -n "$__ai_npm_prefix" ] && [ "$__ai_npm_prefix" != "undefined" ]; then'
+    # Git Bash'da `npm config get prefix` Windows-shaklida (C:\Users\...) qaytadi.
+    # Uni to'g'ridan-to'g'ri PATH'ga qo'shsak, ":" ajratgich "C:" ni bo'lib,
+    # buzuq "\Users\..." yozuv hosil qiladi va npm CLI'lar ishga tushmaydi.
+    # Shu sababli avval POSIX shaklga (/c/Users/...) o'tkazamiz.
+    printf '%s\n' '    case "$__ai_npm_prefix" in'
+    printf '%s\n' '      [A-Za-z]:*) command -v cygpath >/dev/null 2>&1 && __ai_npm_prefix="$(cygpath -u "$__ai_npm_prefix" 2>/dev/null || printf %s "$__ai_npm_prefix")" ;;'
+    printf '%s\n' '    esac'
     printf '%s\n' '    case ":$PATH:" in *":$__ai_npm_prefix/bin:"*) ;; *) export PATH="$__ai_npm_prefix/bin:$PATH" ;; esac'
     printf '%s\n' '    case ":$PATH:" in *":$__ai_npm_prefix:"*) ;; *) export PATH="$__ai_npm_prefix:$PATH" ;; esac'
     printf '%s\n' '  fi'

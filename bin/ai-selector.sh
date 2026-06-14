@@ -135,6 +135,27 @@ save_last() {
 # papkalarni JORIY sessiya PATH'iga qo'shib, muammoni bartaraf etadi.
 augment_tool_path() {
   local dirs=() d prefix userbase
+
+  # Avval PATH'ni buzuq yozuvlardan TOZALAYMIZ. Git Bash'da Windows-shakl yo'l
+  # (C:\Users\...) PATH'ga tushib qolsa, ":" ajratgich "C:" ni bo'lib, yagona
+  # "C" harfi va "\Users\..." kabi buzuq bo'laklar hosil qiladi (bu ko'pincha
+  # eski ~/.bashrc blokidan keladi). Ular npm shim'larini chalkashtirib,
+  # "Cannot find module C:\Program Files\Git\Users\..." xatosini beradi.
+  # Shu yozuvlarni olib tashlaymiz — qolgan to'g'ri (/c/...) yo'llar yetarli.
+  local cleaned="" entry
+  local _oldifs="$IFS"
+  set -f
+  IFS=':'
+  for entry in $PATH; do
+    case "$entry" in
+      ''|[A-Za-z]|\\*) continue ;;   # bo'sh, yagona drive harfi ("C"), yoki "\..."
+    esac
+    cleaned="${cleaned:+$cleaned:}$entry"
+  done
+  IFS="$_oldifs"
+  set +f
+  [[ -n "$cleaned" ]] && PATH="$cleaned"
+
   if command -v npm >/dev/null 2>&1; then
     prefix="$(npm config get prefix 2>/dev/null || true)"
     if [[ -n "$prefix" && "$prefix" != "undefined" ]]; then
