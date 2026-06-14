@@ -7,10 +7,9 @@
 # install.sh buni avtomatik bajaradi.
 
 _ai_complete() {
-  local cur prev flags names cfg
+  local cur flags names cfg
   cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
-  flags="--list --update --doctor --add --help -l -u -d -a -h"
+  flags="--list --free --top --update --doctor --add --version --help -l -f -t -u -d -a -v -h"
 
   # Faqat birinchi argument to'ldiriladi (qolganlari agentga uzatiladi).
   if [[ "$COMP_CWORD" -ne 1 ]]; then

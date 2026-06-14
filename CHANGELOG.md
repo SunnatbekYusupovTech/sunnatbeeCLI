@@ -8,10 +8,19 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 ## [Nashr qilinmagan]
 
 ### Qo'shildi
-- **9 ta yangi agent** (jami 24 ta): Open Interpreter, OpenHands, SWE-agent,
-  Cline CLI, Kilo CLI, Roo Code CLI, Grok Build, Antigravity, GitHub CLI.
+- **8 ta yangi agent** (jami 23 ta): Open Interpreter, OpenHands, SWE-agent,
+  Cline CLI, Kilo CLI, Grok Build, Antigravity, GitHub CLI.
   Ochiq manbali / bepullar `🆓 bepul` statusi bilan belgilandi va
-  `aidevix --free`da chiqadi (endi 12+ bepul agent).
+  `aidevix --free`da chiqadi (endi 11+ bepul agent).
+
+### Tuzatildi (paket nomlari rasmiy manbalardan tekshirildi)
+- Cline CLI: `cline-cli` → **`cline`** (npm).
+- Kilo CLI: `kilo-cli` → **`@kilocode/cli`** (npm).
+- SWE-agent: `swe-agent` → **`sweagent`** (PyPI).
+- Grok Build: `npm grok-build` → rasmiy **xAI installer** (`x.ai/cli/install.sh`,
+  buyruq `grok`, SuperGrok/X Premium obunasi).
+- Roo Code CLI **olib tashlandi** — rasmiy terminal CLI'si yo'q (faqat VS Code
+  kengaytmasi).
 
 ### O'zgartirildi
 - **CLI o'rnatish animatsiyasi yangilandi** — endi o'rnatish davomida chiroyli,

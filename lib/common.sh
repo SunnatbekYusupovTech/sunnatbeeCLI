@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
+# shellcheck disable=SC2034  # rang palitrasi konstantalari — ba'zilari ataylab zaxira
 #
-# lib/common.sh — AI Terminal Pult uchun umumiy yordamchi funksiyalar.
+# lib/common.sh — Aidevix CLI uchun umumiy yordamchi funksiyalar.
 # Bu fayl mustaqil ishga tushirilmaydi; boshqa skriptlar `source` qiladi.
 #
 # Mazmuni:
