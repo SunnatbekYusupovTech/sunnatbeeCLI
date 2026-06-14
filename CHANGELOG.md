@@ -7,6 +7,11 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+### O'zgartirildi
+- **CLI o'rnatish animatsiyasi yangilandi** — endi o'rnatish davomida chiroyli,
+  gradientli "komet" progress-bar (chap-o'ngга sakraydigan, izli) + spinner va
+  o'tgan vaqt ko'rinadi; tugagach to'liq yashil/qizil bar.
+
 ## [1.0.0] — 2026-06-14
 
 Birinchi barqaror (production) nashr. 🎉

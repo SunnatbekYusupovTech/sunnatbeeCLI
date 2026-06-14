@@ -248,22 +248,38 @@ spin_run() {
     return "${PIPESTATUS[0]}"
   fi
 
-  local frames
+  # Spinner ramkalari + progress-bar belgilarini Unicode/ASCII'ga moslaymiz.
+  local frames comet trail1 trail2 dimc
   if [[ "${UI_UTF8:-1}" -eq 1 ]]; then
     frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+    comet='█'; trail1='▓'; trail2='▒'; dimc='░'
   else
     frames=('|' '/' '-' '\')
+    comet='#'; trail1='='; trail2='-'; dimc='.'
   fi
-  local n=${#frames[@]}
+  local n=${#frames[@]} barw=22
 
   bash -c "$cmd" >"$SPIN_LOG" 2>&1 &
   local pid=$! i=0 start=$SECONDS el
   printf '\033[?25l' >&2
   while kill -0 "$pid" 2>/dev/null; do
     el=$((SECONDS - start))
-    printf '\r%s%s%s %s%s%s  %s%ss%s\033[K' \
+    # Indeterminat "komet": chap-o'ngga sakraydi, orqasida gradientli iz qoldiradi.
+    local period=$(( (barw - 1) * 2 )); (( period < 1 )) && period=1
+    local pos=$(( i % period )); (( pos >= barw )) && pos=$(( period - pos ))
+    local bar="" k dist
+    for ((k = 0; k < barw; k++)); do
+      dist=$(( k - pos )); (( dist < 0 )) && dist=$(( -dist ))
+      if   (( dist == 0 )); then bar+="${C_G1}${comet}"
+      elif (( dist == 1 )); then bar+="${C_G3}${trail1}"
+      elif (( dist == 2 )); then bar+="${C_G4}${trail2}"
+      else                        bar+="${C_GRAY}${dimc}"
+      fi
+    done
+    printf '\r %s%s%s %s%s%s  %s%s  %s%2ss%s\033[K' \
       "$C_CYAN" "${frames[i % n]}" "$C_RESET" \
       "$C_BOLD" "$msg" "$C_RESET" \
+      "$bar" "$C_RESET" \
       "$C_GRAY" "$el" "$C_RESET" >&2
     i=$((i + 1))
     sleep 0.08
@@ -271,10 +287,16 @@ spin_run() {
   local rc=0; wait "$pid" || rc=$?
   printf '\033[?25h' >&2
   el=$((SECONDS - start))
+
+  # Yakuniy holat — to'liq to'ldirilgan bar (yashil/qizil).
+  local fullbar="" k
+  for ((k = 0; k < barw; k++)); do fullbar+="$comet"; done
   if [[ "$rc" -eq 0 ]]; then
-    printf '\r%s✓%s %s  %s(%ss)%s\033[K\n' "$C_GREEN" "$C_RESET" "$msg" "$C_GRAY" "$el" "$C_RESET" >&2
+    printf '\r %s✓%s %s  %s%s%s  %s(%ss)%s\033[K\n' \
+      "$C_GREEN" "$C_RESET" "$msg" "$C_GREEN" "$fullbar" "$C_RESET" "$C_GRAY" "$el" "$C_RESET" >&2
   else
-    printf '\r%s✗%s %s  %s(%ss)%s\033[K\n' "$C_RED" "$C_RESET" "$msg" "$C_GRAY" "$el" "$C_RESET" >&2
+    printf '\r %s✗%s %s  %s%s%s  %s(%ss)%s\033[K\n' \
+      "$C_RED" "$C_RESET" "$msg" "$C_RED" "$fullbar" "$C_RESET" "$C_GRAY" "$el" "$C_RESET" >&2
   fi
   return "$rc"
 }
