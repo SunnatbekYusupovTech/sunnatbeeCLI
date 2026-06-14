@@ -9,14 +9,24 @@
 `aidevix` deb yozing → ro'yxatdan tanlang → CLI avtomatik ishga tushadi.
 O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
+[![Release](https://img.shields.io/github/v/release/SUNNATBEE/sunnatbeeCLI?label=release&logo=github&color=8a2be2&sort=semver)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
 [![CI](https://github.com/SUNNATBEE/sunnatbeeCLI/actions/workflows/ci.yml/badge.svg)](https://github.com/SUNNATBEE/sunnatbeeCLI/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/github/v/tag/SUNNATBEE/sunnatbeeCLI?label=version&color=8a2be2)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases)
 [![Shell](https://img.shields.io/badge/shell-bash%20%7C%20zsh-1f425f.svg?logo=gnu-bash&logoColor=white)](#)
 [![Powered by fzf](https://img.shields.io/badge/powered%20by-fzf-00b894.svg)](https://github.com/junegunn/fzf)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![One-line install](https://img.shields.io/badge/install-one--line-ff69b4.svg)](#-ornatish-installation)
+
+[![⚡ Hoziroq o'rnatish](https://img.shields.io/badge/⚡_Hoziroq_o'rnatish-bir_buyruq-ff69b4?style=for-the-badge)](#-ornatish-installation)
+[![📦 Eng so'nggi reliz](https://img.shields.io/badge/📦_Eng_so'nggi_reliz-v1.0.0-8a2be2?style=for-the-badge&logo=github)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
 
 </div>
+
+> **⚡ Tezkor o'rnatish** — Git Bash (Windows) yoki terminal (Linux/macOS)da:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstrap.sh | bash
+> ```
+>
+> So'ng `source ~/.bashrc && aidevix`. To'liq qo'llanma: [**O'rnatish**](#-ornatish-installation) · Yuklab olish: [**Releases**](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
 
 ---
 
