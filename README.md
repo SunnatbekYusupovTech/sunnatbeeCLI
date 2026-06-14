@@ -17,8 +17,19 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 [![Powered by fzf](https://img.shields.io/badge/powered%20by-fzf-00b894.svg)](https://github.com/junegunn/fzf)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-555?logo=linux&logoColor=white)](#-ornatish-installation)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org/)
+[![Stars](https://img.shields.io/github/stars/SUNNATBEE/sunnatbeeCLI?style=social)](https://github.com/SUNNATBEE/sunnatbeeCLI/stargazers)
+
 [![⚡ Hoziroq o'rnatish](https://img.shields.io/badge/⚡_Hoziroq_o'rnatish-bir_buyruq-ff69b4?style=for-the-badge)](#-ornatish-installation)
 [![📦 Eng so'nggi reliz](https://img.shields.io/badge/📦_Eng_so'nggi_reliz-v1.1.0-8a2be2?style=for-the-badge&logo=github)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
+
+<br/>
+
+<img src="assets/demo.svg" alt="Aidevix CLI demo" width="680" />
+
+<sub>▶ Jonli (animatsion) demoni yaratish: <code>bash scripts/record-demo.sh</code> → <code>assets/demo.gif</code></sub>
 
 </div>
 
@@ -505,13 +516,15 @@ aidevix-cli/
 │   ├── *.bats            #   unit_parse · cli · common
 │   ├── test_helper.bash  #   umumiy setup
 │   └── fixtures/         #   test agents.conf
+├── scripts/              # demo.sh + record-demo.sh (asciinema → GIF)
 ├── packaging/            # Paket menejer manifestlari
 │   ├── homebrew/aidevix.rb
 │   └── scoop/aidevix.json
 ├── man/
 │   └── aidevix.1         # man sahifa (man aidevix)
 ├── assets/
-│   └── log.jpg           # Aidevix "AD" logosi
+│   ├── log.jpg           # Aidevix "AD" logosi
+│   └── demo.svg          # README demo posteri
 ├── bin/
 │   ├── ai-selector.sh    # `aidevix` buyrug'i — menyu + avtomatik o'rnatish
 │   ├── cli.js            # npm uchun Node launcher (bash'ni topib chaqiradi)

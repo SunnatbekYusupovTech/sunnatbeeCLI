@@ -24,6 +24,8 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | `completions/` | `aidevix.bash` (bash/zsh), `_aidevix` (zsh native), `aidevix.fish` (fish). |
 | `packaging/` | `homebrew/aidevix.rb` (formula), `scoop/aidevix.json` (manifest). Relizda `url`/`sha256`/`version` yangilanadi. |
 | `man/aidevix.1` | man sahifa. |
+| `scripts/` | `demo.sh` (deterministik, non-interaktiv demo) + `record-demo.sh` (asciinema→agg→`assets/demo.gif`). |
+| `assets/demo.svg` | README demo posteri (statik). `log.jpg` — AD logosi. |
 | `README.md` / `README.en.md` | O'zbekcha / inglizcha hujjat (til almashtirgich tepada). |
 | `install.sh` | Lokal o'rnatish (symlink → `~/.local/bin`, rc zaxira, idempotent, sudosiz). |
 | `bootstrap.sh` | `curl \| bash` bitta-buyruqli o'rnatuvchi (repo'ni `~/.ai-cli`ga klonlaydi). |

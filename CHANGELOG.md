@@ -29,6 +29,11 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 - **🖥️ man sahifa** — `man/aidevix.1` (`man aidevix`).
 - **🧹 Repo gigiyenasi** — `.editorconfig`, `.github/dependabot.yml`
   (Actions versiyalari), `.github/CODEOWNERS`.
+- **🎬 Demo** — `assets/demo.svg` (README posteri) + `scripts/demo.sh`
+  (deterministik, non-interaktiv demo) va `scripts/record-demo.sh`
+  (asciinema → agg → `assets/demo.gif`).
+- **Qo'shimcha README badge'lari** — platform, PRs welcome, Conventional Commits,
+  GitHub stars (UZ va EN).
 
 ### O'zgardi
 - `bin/ai-selector.sh` oxiriga `source`-qorovuli qo'shildi (`BASH_SOURCE` ==

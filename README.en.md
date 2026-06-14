@@ -17,6 +17,17 @@ Not installed yet? It installs itself. 🪄
 [![Powered by fzf](https://img.shields.io/badge/powered%20by-fzf-00b894.svg)](https://github.com/junegunn/fzf)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-555?logo=linux&logoColor=white)](#-installation)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org/)
+[![Stars](https://img.shields.io/github/stars/SUNNATBEE/sunnatbeeCLI?style=social)](https://github.com/SUNNATBEE/sunnatbeeCLI/stargazers)
+
+<br/>
+
+<img src="assets/demo.svg" alt="Aidevix CLI demo" width="680" />
+
+<sub>▶ Generate the animated demo: <code>bash scripts/record-demo.sh</code> → <code>assets/demo.gif</code></sub>
+
 </div>
 
 > **⚡ Quick install** — in Git Bash (Windows) or a terminal (Linux/macOS):
