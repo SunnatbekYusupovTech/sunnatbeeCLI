@@ -14,7 +14,7 @@ jobs:
     name: ShellCheck (lint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: ShellCheck
         uses: ludeeus/action-shellcheck@master
@@ -29,7 +29,7 @@ jobs:
     name: Bash sintaksis tekshiruvi
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: bash -n (barcha skriptlar)
         run: |
@@ -44,7 +44,7 @@ jobs:
     name: agents.conf validatsiyasi
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Har bir agent qatorida 5-7 ta "|" borligini tekshirish
         run: |
@@ -66,7 +66,7 @@ jobs:
     name: Bats testlari
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Bats'ni o'rnatish
         uses: bats-core/bats-action@3.0.0
@@ -84,7 +84,7 @@ jobs:
     name: Paketlash tekshiruvi (npm/JSON)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
