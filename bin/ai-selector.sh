@@ -914,4 +914,9 @@ main() {
   esac
 }
 
-main "$@"
+# Skript to'g'ridan-to'g'ri ishga tushirilganda main()'ni chaqiramiz. `source`
+# qilinganda (masalan bats testlarida) chaqirmaymiz — shunda alohida funksiyalarni
+# (trim, parse_agents, ...) izolyatsiyada test qilish mumkin bo'ladi.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

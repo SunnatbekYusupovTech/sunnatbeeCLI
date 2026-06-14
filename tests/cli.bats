@@ -1,0 +1,112 @@
+#!/usr/bin/env bats
+# cli.bats — CLI sathidagi (qora-quti) xulq-atvor testlari.
+
+load test_helper
+
+setup() {
+  setup_env
+  export AI_PULT_CONFIG="$FIXTURE_CONFIG"
+}
+
+# --- --version / --help ---------------------------------------------------
+@test "--version: versiyani VERSION faylidan chiqaradi" {
+  run_cli --version
+  [ "$status" -eq 0 ]
+  local ver
+  ver="$(cat "$PROJECT_ROOT/VERSION")"
+  [[ "$output" == *"Aidevix CLI"* ]]
+  [[ "$output" == *"$ver"* ]]
+}
+
+@test "-v: --version bilan bir xil" {
+  run_cli -v
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Aidevix CLI"* ]]
+}
+
+@test "--help: foydalanish matnini ko'rsatadi" {
+  run_cli --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"FOYDALANISH"* ]]
+  [[ "$output" == *"--list"* ]]
+}
+
+# --- --list ---------------------------------------------------------------
+@test "--list: fixture'dagi agentlarni ko'rsatadi" {
+  run_cli --list
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Alpha CLI"* ]]
+  [[ "$output" == *"Bravo CLI"* ]]
+}
+
+@test "--list: o'rnatilgan/yo'q holatini ko'rsatadi" {
+  run_cli --list
+  [ "$status" -eq 0 ]
+  # Alpha (bash) → ✓, Bravo (mavjud emas) → ✗
+  [[ "$output" == *"✓"* ]]
+  [[ "$output" == *"✗"* ]]
+}
+
+# --- Noto'g'ri argumentlar ------------------------------------------------
+@test "noma'lum tanlov (--badflag) → exit 2" {
+  run_cli --badflag
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Noma'lum tanlov"* ]]
+}
+
+@test "mos kelmaydigan agent nomi → exit 2" {
+  run_cli yyyzzz-mavjud-emas
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Mos agent topilmadi"* ]]
+}
+
+# --- __preview qism-jarayoni ---------------------------------------------
+@test "__preview: berilgan agent tafsilotini chiqaradi" {
+  # Preview datafile build_rows formatida bo'lishi kerak.
+  local datafile="$BATS_TEST_TMPDIR/rows.tsv"
+  bash "$SELECTOR" --list >/dev/null 2>&1 || true
+  # build_rows chiqishini to'g'ridan-to'g'ri hosil qilamiz.
+  bash -c 'source "'"$SELECTOR"'"; set +eEu; trap - ERR EXIT; build_rows "'"$FIXTURE_CONFIG"'"' > "$datafile"
+  run bash "$SELECTOR" __preview "Alpha CLI" "$datafile"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Alpha CLI"* ]]
+}
+
+# --- quick_launch resolutsiyasi (launch_agent stub bilan) ----------------
+# Haqiqiy ishga tushirishni (exec) o'rniga stub qo'yib, faqat tanlov mantig'ini
+# tekshiramiz.
+@test "quick_launch: aniq nom bo'yicha agentni topadi" {
+  load_selector
+  ensure_installed() { :; }
+  maybe_show_auth_note() { :; }
+  save_last() { :; }
+  launch_agent() { printf 'LAUNCH|%s|%s|%s\n' "$1" "$2" "$3"; }
+  export AI_PULT_CONFIG="$FIXTURE_CONFIG"
+  run quick_launch "Alpha CLI"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "LAUNCH|Alpha CLI|bash|bash -c true" ]]
+}
+
+@test "quick_launch: binar nomi bo'yicha (katta-kichik harf farqsiz) topadi" {
+  load_selector
+  ensure_installed() { :; }
+  maybe_show_auth_note() { :; }
+  save_last() { :; }
+  launch_agent() { printf 'LAUNCH|%s\n' "$1"; }
+  export AI_PULT_CONFIG="$FIXTURE_CONFIG"
+  run quick_launch "CHARLIEBIN"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "LAUNCH|Charlie" ]]
+}
+
+@test "quick_launch: qisman moslik bilan topadi" {
+  load_selector
+  ensure_installed() { :; }
+  maybe_show_auth_note() { :; }
+  save_last() { :; }
+  launch_agent() { printf 'LAUNCH|%s\n' "$1"; }
+  export AI_PULT_CONFIG="$FIXTURE_CONFIG"
+  run quick_launch "brav"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "LAUNCH|Bravo CLI" ]]
+}

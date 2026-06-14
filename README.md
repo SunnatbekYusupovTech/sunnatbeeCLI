@@ -466,15 +466,22 @@ aidevix-cli/
 ├── CHANGELOG.md          # O'zgarishlar tarixi (SemVer)
 ├── CONTRIBUTING.md       # Hissa qo'shish qo'llanmasi
 ├── CODE_OF_CONDUCT.md    # Xulq-atvor kodeksi
+├── SECURITY.md           # Xavfsizlik siyosati va zaiflik xabari
+├── CLAUDE.md             # Loyiha xaritasi (AI yordamchilar uchun konteks)
+├── Makefile              # make test / lint / syntax / check
 ├── VERSION               # Joriy versiya (masalan 1.0.0)
 ├── LICENSE               # MIT
 ├── bootstrap.sh          # Bir buyruq bilan o'rnatuvchi (curl | bash)
 ├── install.sh            # Asosiy o'rnatuvchi (zaxira + symlink + completion)
 ├── uninstall.sh          # Toza o'chiruvchi
 ├── .github/              # CI, release, issue/PR shablonlari
-│   ├── workflows/        #   ci.yml (shellcheck) · release.yml
+│   ├── workflows/        #   ci.yml (shellcheck · bash -n · bats) · release.yml
 │   ├── ISSUE_TEMPLATE/   #   bug / feature shablonlari
 │   └── PULL_REQUEST_TEMPLATE.md
+├── tests/                # Bats testlari (unit + CLI + common)
+│   ├── *.bats            #   unit_parse · cli · common
+│   ├── test_helper.bash  #   umumiy setup
+│   └── fixtures/         #   test agents.conf
 ├── assets/
 │   └── log.jpg           # Aidevix "AD" logosi
 ├── bin/
@@ -501,6 +508,23 @@ bitta qator. Shell skriptlarini [shellcheck](https://www.shellcheck.net/) bilan
 tekshirib yuborganingiz — alohida rahmat (CI buni avtomatik tekshiradi). 🙏
 
 Loyihada qatnashuvchilar [Xulq-atvor kodeksi](./CODE_OF_CONDUCT.md)ga amal qiladi.
+
+### 🧪 Testlar
+
+```bash
+make test     # yoki: bats tests/
+make check    # syntax + lint + test (CI bilan bir xil)
+```
+
+Tafsilot: [`tests/README.md`](./tests/README.md). Har push/PR'da CI avtomatik ishlatadi.
+
+---
+
+## 🔐 Xavfsizlik
+
+Aidevix uchinchi-tomon o'rnatuvchilarini (`npm`, `pip`, `curl | bash`) **ruxsatingiz
+bilan** ishga tushiradi va API kalitlaringizni **ko'rmaydi/saqlamaydi**. To'liq
+xavfsizlik modeli va zaiflik haqida xabar berish: [**SECURITY.md**](./SECURITY.md).
 
 ---
 

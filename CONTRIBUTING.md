@@ -35,14 +35,17 @@ bash install.sh        # lokal o'rnatish
    ```bash
    bash -n bin/ai-selector.sh          # sintaksis
    shellcheck bin/*.sh lib/*.sh *.sh   # lint (tavsiya etiladi)
+   bats tests/                         # testlar (yoki: make check)
    ```
+   Yangi funksiya yoki xulq-atvor qo'shsangiz — `tests/` ga test ham qo'shing
+   (qarang: [`tests/README.md`](tests/README.md)).
 4. **Commit** — [Conventional Commits](https://www.conventionalcommits.org/) uslubida:
    `feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`.
 5. **Push** qiling va **Pull Request** oching, shablonni to'ldiring.
 
 ## ✅ Qabul mezonlari
 
-- `bash -n` va `shellcheck` xatosiz o'tadi (CI buni tekshiradi).
+- `bash -n`, `shellcheck` va `bats tests/` xatosiz o'tadi (CI buni tekshiradi).
 - O'zgarish hujjatlangan (kerak bo'lsa `README.md` / `CHANGELOG.md`).
 - Mavjud xulq-atvor buzilmagan (idempotentlik, xavfsizlik saqlanadi).
 

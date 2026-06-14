@@ -7,6 +7,23 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+### Qo'shildi
+- **🧪 Test to'plami (Bats)** — `tests/` ostida 38 ta avtomatlashtirilgan test:
+  config parsing (`parse_agents`, `build_rows`, `trim`, `detect_install_tool`),
+  CLI xulq-atvori (`--version`/`--help`/`--list`, noto'g'ri argumentlar,
+  `quick_launch` resolutsiyasi) va `lib/common.sh` yordamchilari. CI har push/PR'da
+  ishga tushiradi. Lokal: `bats tests/` yoki `make check`.
+- **`Makefile`** — `make test` / `lint` / `syntax` / `check` qulayliklari.
+- **`SECURITY.md`** — xavfsizlik siyosati, ishonch chegaralari (uchinchi-tomon
+  o'rnatuvchilar, `curl | bash`, auto-update) va zaiflik xabari yo'riqnomasi.
+- **`CLAUDE.md`** — loyiha xaritasi (fayl/funksiya/konventsiya) — AI yordamchilari
+  kodni qaytadan o'qimasdan kontekstni tez tiklashi uchun.
+
+### O'zgardi
+- `bin/ai-selector.sh` oxiriga `source`-qorovuli qo'shildi (`BASH_SOURCE` ==
+  `$0`) — endi skriptni testda `source` qilganda `main()` ishga tushmaydi;
+  xulq-atvor o'zgarmaydi.
+
 ## [1.1.0] — 2026-06-14
 
 ### Qo'shildi
