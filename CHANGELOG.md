@@ -16,10 +16,15 @@ Birinchi barqaror (production) nashr. 🎉
   GitHub Copilot, OpenCode, Crush, Qwen Code, Continue, Cursor Agent, Plandex,
   Aider, Goose, Ollama, llm, AIChat — barchasi `@latest` versiya bilan.
 - **Login/auth belgisi** — har bir agent uchun qaysi login yoki API kalit
-  kerakligi (🔑/🌐/💳/🆓) menyu preview'sida va `--list`da ko'rsatiladi.
-- **Birinchi ishga tushirish yo'riqnomasi** — agent ilk bor ochilganda login
-  haqida bir martalik, tushunarli eslatma (kalitlar saqlanmaydi).
+  kerakligi (🔑/🌐/💳/🆓) menyu preview'sida, `--list`da va menyu qatorida.
+- **Login havolasi** — har agentга login/kalit sahifasi linki; agent ilk bor
+  ishga tushganda u **brauzerда avtomatik ochiladi** (bir martalik, kalitlar
+  saqlanmaydi).
+- **`aidevix --free`** — faqat bepul agentlar menyusi (Gemini, Qwen, Ollama,
+  Continue). **`aidevix --top`** — faqat eng mashhur agentlar.
 - **`aidevix --version`** — versiyani ko'rsatadi (`VERSION` faylidan o'qiladi).
+- **O'rnatishdan keyin katta, aniq yo'riqnoma** — `source ~/.bashrc && aidevix`
+  bilan o'sha oynaning o'zida ishlatish yoki Git Bash'ni qayta ochish.
 - **fzf avtomatik o'rnatish** — o'rnatishda fzf GitHub releases'dan yuklab
   olinadi (sudo kerak emas), bo'lmasa paket-menejer.
 - **AD logosi + animatsiyali banner** — "Aidevix CLI" brendi.

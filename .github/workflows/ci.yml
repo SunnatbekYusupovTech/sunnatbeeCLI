@@ -46,16 +46,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Har bir agent qatorida 6 ta "|" borligini tekshirish
+      - name: Har bir agent qatorida 5-7 ta "|" borligini tekshirish
         run: |
           set -e
           fail=0
+          # 6 majburiy (5 "|") + AUTH + URL (ixtiyoriy) => 5..7 "|" ruxsat etiladi.
           while IFS= read -r line; do
             case "$line" in ''|\#*) continue ;; esac
             n=$(printf '%s' "$line" | tr -cd '|' | wc -c)
             name=$(printf '%s' "$line" | cut -d'|' -f1)
-            if [ "$n" -ne 6 ]; then
-              echo "::error::Noto'g'ri maydon soni ($n, 6 kerak): $name"
+            if [ "$n" -lt 5 ] || [ "$n" -gt 7 ]; then
+              echo "::error::Noto'g'ri maydon soni ($n ta '|', 5-7 kerak): $name"
               fail=1
             fi
           done < config/agents.conf

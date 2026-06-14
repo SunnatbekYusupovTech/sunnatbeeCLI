@@ -143,6 +143,32 @@ tool_hint() {
 # show_cursor — kursorni qaytaradi (spinner yoki Ctrl+C'dan keyin).
 show_cursor() { [[ "${UI_TTY:-0}" -eq 1 ]] && printf '\033[?25h' >&2 || true; }
 
+# open_url <url> — havolani standart brauzerda ochadi (platformaga qarab).
+#   Eng yaxshi-harakat: xato bo'lsa ham jim qaytadi (havola baribir chop etiladi).
+open_url() {
+  local url="$1" os
+  [[ -n "$url" ]] || return 0
+  os="$(uname -s 2>/dev/null || echo unknown)"
+  case "$os" in
+    MINGW*|MSYS*|CYGWIN*)
+      # Windows / Git Bash — explorer URL'ni standart brauzerda ochadi.
+      # MSYS2_ARG_CONV_EXCL='*' — MSYS "https://" ni yo'lga aylantirmasin.
+      if command -v explorer.exe >/dev/null 2>&1; then
+        MSYS2_ARG_CONV_EXCL='*' explorer.exe "$url" >/dev/null 2>&1 &
+      elif command -v powershell >/dev/null 2>&1; then
+        powershell -NoProfile -Command "Start-Process '$url'" >/dev/null 2>&1 &
+      fi
+      ;;
+    Darwin*)
+      command -v open >/dev/null 2>&1 && open "$url" >/dev/null 2>&1 &
+      ;;
+    *)
+      command -v xdg-open >/dev/null 2>&1 && xdg-open "$url" >/dev/null 2>&1 &
+      ;;
+  esac
+  return 0
+}
+
 # hr [eni] — gorizontal chiziq satrini QAYTARADI (chop etmaydi).
 hr() {
   local w="${1:-46}" ch i s=''

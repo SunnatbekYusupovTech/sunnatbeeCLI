@@ -365,15 +365,26 @@ main() {
   install_user_config
   install_shell_block "$rc"
 
-  printf '\n'
-  if declare -f hr >/dev/null 2>&1; then
-    printf '  %s%s%s\n' "${C_GREEN:-}" "$(hr 46)" "${C_RESET:-}"
-  fi
-  log_success "O'rnatish muvaffaqiyatli tugadi! 🎉"
-  printf '\n  %sKeyingi qadam%s — terminalni qayta oching, yoki:\n' "${C_BOLD:-}" "${C_RESET:-}"
-  printf '    %ssource %s%s\n'  "${C_CYAN:-}" "$rc" "${C_RESET:-}"
-  printf '\n  So\047ngra menyuni oching:\n'
-  printf '    %s%saidevix%s\n\n'     "${C_BOLD:-}" "${C_CYAN:-}" "${C_RESET:-}"
+  # --- KATTA, ANIQ YAKUNIY XABAR --------------------------------------------
+  # Foydalanuvchi `curl | bash` orqali o'rnatadi — o'sha SESSIYADA buyruq
+  # avtomatik ko'rinmaydi (bola jarayon ota-shell PATH'ini o'zgartira olmaydi).
+  # Shu sababli ikki yo'lni KATTA qilib, aniq ko'rsatamiz.
+  local line; line="$(declare -f hr >/dev/null 2>&1 && hr 60 || printf '%.0s━' {1..60})"
+  printf '\n\n' >&2
+  printf '  %s%s%s\n' "${C_G1:-}" "$line" "${C_RESET:-}" >&2
+  printf '  %s%s✅  TAYYOR! Aidevix CLI o'\''rnatildi%s  🎉\n' "${C_BOLD:-}" "${C_GREEN:-}" "${C_RESET:-}" >&2
+  printf '  %s%s%s\n\n' "${C_G4:-}" "$line" "${C_RESET:-}" >&2
+
+  printf '  %s%s▶  ENG TEZ — shu oynaning o'\''zida ishlating:%s\n' "${C_BOLD:-}" "${C_TITLE:-}" "${C_RESET:-}" >&2
+  printf '\n' >&2
+  printf '        %s%ssource %s%s\n'  "${C_BOLD:-}" "${C_CYAN:-}" "$rc" "${C_RESET:-}" >&2
+  printf '        %s%saidevix%s\n'    "${C_BOLD:-}" "${C_CYAN:-}" "${C_RESET:-}" >&2
+  printf '\n' >&2
+  printf '  %s%s▶  YOKI — Git Bash oynasini YOPIB, qaytadan oching va yozing:%s\n' "${C_BOLD:-}" "${C_TITLE:-}" "${C_RESET:-}" >&2
+  printf '\n' >&2
+  printf '        %s%saidevix%s\n'    "${C_BOLD:-}" "${C_CYAN:-}" "${C_RESET:-}" >&2
+  printf '\n' >&2
+  printf '  %s%s%s\n\n' "${C_G1:-}" "$line" "${C_RESET:-}" >&2
 }
 
 main "$@"

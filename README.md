@@ -289,6 +289,8 @@ o'rnatishni taklif qiladi:
 | `aidevix` | Interaktiv menyuni ochadi (fzf bo'lsa fzf + preview, bo'lmasa raqamli) |
 | `aidevix <agent>` | Agentni nomi/binari bo'yicha **to'g'ridan-to'g'ri** ishga tushiradi (masalan `aidevix claude`) |
 | `aidevix --list` | Barcha CLI'lar va ularning **o'rnatilgan/yo'q** holatini ko'rsatadi |
+| `aidevix --free` | 🆓 **Faqat bepul** agentlar menyusi (sinab ko'rish uchun eng yaxshisi) |
+| `aidevix --top` | ⭐ **Faqat eng mashhur** (top) agentlar menyusi |
 | `aidevix --update` | O'rnatilgan barcha agentlarni yangilaydi |
 | `aidevix --doctor` | Muhitni tekshiradi (vositalar, PATH, agentlar holati) |
 | `aidevix --add` | Interaktiv tarzda yangi agent qo'shadi |
@@ -304,13 +306,17 @@ o'rnatishni taklif qiladi:
 Ko'pchilik AI CLI'lar ishlashidan oldin **hisobga kirish (login)** yoki **API
 kalit** talab qiladi. Aidevix buni siz uchun soddalashtiradi:
 
-- 📋 Menyuda har agent yonida (preview'da) va `aidevix --list`da **qaysi login
-  kerakligi** ko'rsatiladi.
-- 🔔 Agentni **birinchi marta** ishga tushirganingizda — login/kalit haqida
-  qisqa, tushunarli **bir martalik eslatma** chiqadi.
+- 📋 Menyuda har agent yonida belgi (🆓/🔑/🌐/💳), preview'da to'liq login talabi
+  va **havola** ko'rinadi.
+- 🌐 Agentni **birinchi marta** ishga tushirganingizda — login/kalit haqida
+  qisqa eslatma chiqadi va **login/kalit sahifasi brauzerда avtomatik ochiladi**
+  (bir martalik).
 - 🔒 Kalitlarni o'zingiz, agentning o'z ko'rsatmasi bo'yicha kiritasiz. **Aidevix
   hech qanday parol yoki kalitni ko'rmaydi va saqlamaydi** — ular faqat sizning
   kompyuteringizda qoladi.
+
+> 💡 **Bepulini sinab ko'rmoqchimisiz?** `aidevix --free` — faqat bepul agentlarni
+> (Gemini, Qwen, Ollama, Continue) ko'rsatadi. `aidevix --top` — eng mashhurlarini.
 
 | Belgi | Ma'nosi | Misol |
 |:---:|---|---|
