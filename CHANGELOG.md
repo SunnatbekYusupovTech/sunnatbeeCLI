@@ -7,6 +7,8 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+## [1.1.0] — 2026-06-14
+
 ### Qo'shildi
 - **🔄 Avtomatik yangilanish** — `main`ga push qilingan o'zgarishlar
   foydalanuvchilarga avtomatik yetadi: `aidevix` ishga tushganda (throttled,
@@ -79,5 +81,6 @@ Birinchi barqaror (production) nashr. 🎉
 - **Qo'llab-quvvatlanmaydigan OS** (masalan Cursor Windows'da) — adashtiruvchi
   "internet/sudo" o'rniga halol, aniq xabar ko'rsatiladi.
 
-[Nashr qilinmagan]: https://github.com/SUNNATBEE/sunnatbeeCLI/compare/v1.0.0...HEAD
+[Nashr qilinmagan]: https://github.com/SUNNATBEE/sunnatbeeCLI/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/SUNNATBEE/sunnatbeeCLI/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/SUNNATBEE/sunnatbeeCLI/releases/tag/v1.0.0

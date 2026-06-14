@@ -16,7 +16,7 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 [![⚡ Hoziroq o'rnatish](https://img.shields.io/badge/⚡_Hoziroq_o'rnatish-bir_buyruq-ff69b4?style=for-the-badge)](#-ornatish-installation)
-[![📦 Eng so'nggi reliz](https://img.shields.io/badge/📦_Eng_so'nggi_reliz-v1.0.0-8a2be2?style=for-the-badge&logo=github)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
+[![📦 Eng so'nggi reliz](https://img.shields.io/badge/📦_Eng_so'nggi_reliz-v1.1.0-8a2be2?style=for-the-badge&logo=github)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
 
 </div>
 
