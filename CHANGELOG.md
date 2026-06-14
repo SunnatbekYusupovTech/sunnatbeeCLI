@@ -18,6 +18,17 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
   o'rnatuvchilar, `curl | bash`, auto-update) va zaiflik xabari yo'riqnomasi.
 - **`CLAUDE.md`** — loyiha xaritasi (fayl/funksiya/konventsiya) — AI yordamchilari
   kodni qaytadan o'qimasdan kontekstni tez tiklashi uchun.
+- **🌍 Inglizcha hujjat (`README.en.md`)** + ikkala README tepasida til
+  almashtirgich (🇺🇿 / 🇬🇧) — xalqaro auditoriya uchun.
+- **📦 Paket menejer manifestlari** — npm (`package.json` + `bin/cli.js`
+  cross-platform Node launcher), Homebrew formula (`packaging/homebrew/aidevix.rb`),
+  Scoop manifest (`packaging/scoop/aidevix.json`). Endi `npm i -g aidevix`,
+  `brew install ...`, `scoop install aidevix` mumkin.
+- **⌨️ zsh + fish completion** — `completions/_aidevix` (zsh native) va
+  `completions/aidevix.fish`; `completions/README.md` qo'llanmasi.
+- **🖥️ man sahifa** — `man/aidevix.1` (`man aidevix`).
+- **🧹 Repo gigiyenasi** — `.editorconfig`, `.github/dependabot.yml`
+  (Actions versiyalari), `.github/CODEOWNERS`.
 
 ### O'zgardi
 - `bin/ai-selector.sh` oxiriga `source`-qorovuli qo'shildi (`BASH_SOURCE` ==

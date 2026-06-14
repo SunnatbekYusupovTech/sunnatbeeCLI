@@ -1,0 +1,46 @@
+#compdef aidevix
+# zsh uchun `aidevix` buyrug'i avtomatik to'ldirilishi (native zsh completion).
+#
+# Yoqish:
+#   • Ushbu faylni `fpath` ichidagi papkaga `_aidevix` nomi bilan joylang
+#     (masalan: ~/.zsh/completions/_aidevix), so'ng ~/.zshrc'da:
+#       fpath=(~/.zsh/completions $fpath)
+#       autoload -U compinit && compinit
+#   • Homebrew bilan o'rnatilsa avtomatik ulanadi.
+#
+# Eslatma: Aidevix bash completion'ni ham yetkazadi (completions/aidevix.bash) —
+# u zsh'da `bashcompinit` orqali ishlaydi. Bu fayl esa native, chiroyliroq variant.
+
+_aidevix() {
+  local -a flags
+  flags=(
+    '(-l --list)'{-l,--list}'[agentlar ro'\''yxati va holatini ko'\''rsatadi]'
+    '(-f --free)'{-f,--free}'[faqat bepul agentlar menyusi]'
+    '(-t --top)'{-t,--top}'[faqat eng mashhur agentlar menyusi]'
+    '(-u --update)'{-u,--update}'[o'\''rnatilgan agentlarni yangilaydi]'
+    '(-d --doctor)'{-d,--doctor}'[muhitni tekshiradi]'
+    '(-a --add)'{-a,--add}'[interaktiv yangi agent qo'\''shadi]'
+    '(-v --version)'{-v,--version}'[versiyani ko'\''rsatadi]'
+    '(-h --help)'{-h,--help}'[yordam matnini ko'\''rsatadi]'
+  )
+
+  # Agent binarlarini config'dan o'qiymiz.
+  local cfg=""
+  if [[ -n "${AI_PULT_CONFIG:-}" && -r "$AI_PULT_CONFIG" ]]; then
+    cfg="$AI_PULT_CONFIG"
+  elif [[ -r "$HOME/.config/ai-cli/agents.conf" ]]; then
+    cfg="$HOME/.config/ai-cli/agents.conf"
+  fi
+
+  local -a agents
+  if [[ -n "$cfg" ]]; then
+    agents=(${(f)"$(grep -vE '^[[:space:]]*(#|$)' "$cfg" 2>/dev/null | cut -d'|' -f2 | tr -d ' ')"})
+  fi
+
+  # Faqat birinchi argument to'ldiriladi (qolganlari agentga uzatiladi).
+  if (( CURRENT == 2 )); then
+    _arguments -s $flags '1:agent:(${agents})'
+  fi
+}
+
+_aidevix "$@"

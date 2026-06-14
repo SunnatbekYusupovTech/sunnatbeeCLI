@@ -1,0 +1,54 @@
+{
+  "name": "aidevix",
+  "version": "1.1.0",
+  "description": "One command, 23 top AI CLIs. An interactive launcher that lists, installs and runs terminal AI coding agents (Claude Code, Codex, Gemini, Aider, Ollama, and more).",
+  "keywords": [
+    "ai",
+    "cli",
+    "claude",
+    "codex",
+    "gemini",
+    "copilot",
+    "aider",
+    "ollama",
+    "launcher",
+    "fzf",
+    "tui",
+    "developer-tools"
+  ],
+  "homepage": "https://github.com/SUNNATBEE/sunnatbeeCLI#readme",
+  "bugs": {
+    "url": "https://github.com/SUNNATBEE/sunnatbeeCLI/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SUNNATBEE/sunnatbeeCLI.git"
+  },
+  "license": "MIT",
+  "author": "SUNNATBEE <yusupovsunnatbek32@gmail.com>",
+  "type": "commonjs",
+  "bin": {
+    "aidevix": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "config/",
+    "completions/",
+    "VERSION",
+    "LICENSE",
+    "README.md",
+    "README.en.md"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "scripts": {
+    "test": "bats tests/"
+  }
+}

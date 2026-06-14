@@ -20,7 +20,11 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | `lib/common.sh` | Umumiy yordamchilar: ranglar, `log_*`, `die`, `require_cmd`, `panel`, `banner`, `spin_run`, `tool_hint`, `open_url`. STDERR'ga yozadi. |
 | `config/agents.conf` | Agentlar ro'yxati. Format: `NAME\|BINARY\|COMMAND\|INSTALL\|DESC\|CATEGORY\|AUTH\|URL` (5–7 ta `\|`). |
 | `bin/aidevix.cmd`, `bin/aidevix.ps1` | Windows wrapperlari — Git Bash topib `ai-selector.sh`ni chaqiradi. |
-| `completions/aidevix.bash` | Bash tab-completion. |
+| `bin/cli.js` | npm uchun Node launcher — bash'ni topib `ai-selector.sh`ni `spawnSync` bilan ishga tushiradi (`package.json` `bin`). |
+| `completions/` | `aidevix.bash` (bash/zsh), `_aidevix` (zsh native), `aidevix.fish` (fish). |
+| `packaging/` | `homebrew/aidevix.rb` (formula), `scoop/aidevix.json` (manifest). Relizda `url`/`sha256`/`version` yangilanadi. |
+| `man/aidevix.1` | man sahifa. |
+| `README.md` / `README.en.md` | O'zbekcha / inglizcha hujjat (til almashtirgich tepada). |
 | `install.sh` | Lokal o'rnatish (symlink → `~/.local/bin`, rc zaxira, idempotent, sudosiz). |
 | `bootstrap.sh` | `curl \| bash` bitta-buyruqli o'rnatuvchi (repo'ni `~/.ai-cli`ga klonlaydi). |
 | `uninstall.sh` | O'chirish. |
@@ -71,3 +75,6 @@ bats tests/foo.bats   # bitta fayl
 - **fzf stdin'ni band qiladi:** TTY o'qishlar `/dev/tty`dan, bo'lmasa `&2`/stdin'dan (qarang `ensure_installed`, `prompt_tty`).
 - **`source`-qorovuli:** `ai-selector.sh` oxiri `[[ "${BASH_SOURCE[0]}" == "${0}" ]]` bilan himoyalangan — testda `source` qilsa `main` ishlamaydi. BUNI O'CHIRMA.
 - **Repo nomi:** GitHub'da `SUNNATBEE/sunnatbeeCLI`, buyruq nomi esa `aidevix`.
+
+## Reliz vaqtidagi qo'lda yangilanadigan joylar (versiya bump)
+`VERSION` + `package.json:version` + `packaging/homebrew/aidevix.rb` (`url` teg + `sha256`) + `packaging/scoop/aidevix.json` (`version` + `extract_dir`) + `man/aidevix.1` (`.TH` qatori). Release teg `vX.Y.Z` `VERSION`ga mos bo'lishi shart (CI tekshiradi).

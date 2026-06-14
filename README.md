@@ -9,6 +9,8 @@
 `aidevix` deb yozing → ro'yxatdan tanlang → CLI avtomatik ishga tushadi.
 O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
+**🇺🇿 O'zbekcha** · [🇬🇧 English](./README.en.md)
+
 [![Release](https://img.shields.io/github/v/release/SUNNATBEE/sunnatbeeCLI?label=release&logo=github&color=8a2be2&sort=semver)](https://github.com/SUNNATBEE/sunnatbeeCLI/releases/latest)
 [![CI](https://github.com/SUNNATBEE/sunnatbeeCLI/actions/workflows/ci.yml/badge.svg)](https://github.com/SUNNATBEE/sunnatbeeCLI/actions/workflows/ci.yml)
 [![Shell](https://img.shields.io/badge/shell-bash%20%7C%20zsh-1f425f.svg?logo=gnu-bash&logoColor=white)](#)
@@ -193,6 +195,22 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 > Git Bash'da darrov ishlaydi. PowerShell/cmd'da ham ishlashi uchun
 > `%USERPROFILE%\.local\bin` papkasini Windows **PATH**'iga qo'shing (yoki
 > shunchaki Git Bash'dan foydalaning).
+
+#### 📦 Paket menejerlari orqali
+
+```bash
+# npm (cross-platform — Node.js va ishga tushish uchun bash kerak)
+npm install -g aidevix
+
+# Homebrew (macOS / Linux)
+brew install SUNNATBEE/tap/aidevix
+
+# Scoop (Windows)
+scoop bucket add aidevix https://github.com/SUNNATBEE/sunnatbeeCLI
+scoop install aidevix
+```
+
+> Manifestlar [`packaging/`](./packaging) papkasida (Homebrew formula + Scoop manifest).
 
 ---
 
@@ -468,30 +486,43 @@ aidevix-cli/
 ├── CODE_OF_CONDUCT.md    # Xulq-atvor kodeksi
 ├── SECURITY.md           # Xavfsizlik siyosati va zaiflik xabari
 ├── CLAUDE.md             # Loyiha xaritasi (AI yordamchilar uchun konteks)
+├── README.en.md          # English README
 ├── Makefile              # make test / lint / syntax / check
+├── package.json          # npm paketi (aidevix)
 ├── VERSION               # Joriy versiya (masalan 1.0.0)
 ├── LICENSE               # MIT
 ├── bootstrap.sh          # Bir buyruq bilan o'rnatuvchi (curl | bash)
 ├── install.sh            # Asosiy o'rnatuvchi (zaxira + symlink + completion)
 ├── uninstall.sh          # Toza o'chiruvchi
+├── .editorconfig         # Izchil kod uslubi
 ├── .github/              # CI, release, issue/PR shablonlari
 │   ├── workflows/        #   ci.yml (shellcheck · bash -n · bats) · release.yml
 │   ├── ISSUE_TEMPLATE/   #   bug / feature shablonlari
+│   ├── dependabot.yml    #   Actions versiyalarini avtomatik yangilash
+│   ├── CODEOWNERS
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── tests/                # Bats testlari (unit + CLI + common)
 │   ├── *.bats            #   unit_parse · cli · common
 │   ├── test_helper.bash  #   umumiy setup
 │   └── fixtures/         #   test agents.conf
+├── packaging/            # Paket menejer manifestlari
+│   ├── homebrew/aidevix.rb
+│   └── scoop/aidevix.json
+├── man/
+│   └── aidevix.1         # man sahifa (man aidevix)
 ├── assets/
 │   └── log.jpg           # Aidevix "AD" logosi
 ├── bin/
 │   ├── ai-selector.sh    # `aidevix` buyrug'i — menyu + avtomatik o'rnatish
+│   ├── cli.js            # npm uchun Node launcher (bash'ni topib chaqiradi)
 │   ├── aidevix.cmd       # Windows (cmd.exe) wrapper
 │   └── aidevix.ps1       # Windows (PowerShell) wrapper
 ├── lib/
 │   └── common.sh         # Umumiy funksiyalar (log, rang, xato boshqaruvi)
 ├── completions/
-│   └── aidevix.bash      # `aidevix` uchun bash/zsh avtomatik to'ldirish
+│   ├── aidevix.bash      # bash/zsh (bashcompinit) avtomatik to'ldirish
+│   ├── _aidevix          # zsh native completion
+│   └── aidevix.fish      # fish completion
 └── config/
     └── agents.conf       # Agentlar ro'yxati (23 ta top AI CLI)
 ```

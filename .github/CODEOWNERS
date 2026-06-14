@@ -1,0 +1,11 @@
+# CODEOWNERS — PR'larga avtomatik review so'raladi.
+# https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Standart — butun repozitoriya.
+*           @SUNNATBEE
+
+# Kritik yadro.
+/bin/       @SUNNATBEE
+/lib/       @SUNNATBEE
+/install.sh @SUNNATBEE
+/bootstrap.sh @SUNNATBEE

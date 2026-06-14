@@ -1,0 +1,89 @@
+.\" man sahifa — Aidevix CLI
+.TH AIDEVIX 1 "2026-06-14" "Aidevix CLI 1.1.0" "User Commands"
+.SH NAME
+aidevix \- terminaldagi AI CLI agentlarini bitta menyudan boshqarish
+.SH SYNOPSIS
+.B aidevix
+.RI [ TANLOV " | " AGENT ]
+.SH DESCRIPTION
+.B aidevix
+top AI CLI agentlarini (Claude Code, Codex, Gemini, Aider, Ollama va boshqalar)
+yagona interaktiv menyu orqali ko'rsatadi va ishga tushiradi. Tanlangan agent
+o'rnatilmagan bo'lsa, ruxsat so'rab avtomatik o'rnatadi. Agentlar ro'yxati
+.I config/agents.conf
+faylidan o'qiladi.
+.SH OPTIONS
+.TP
+.BR \-l ", " \-\-list
+Agentlar ro'yxati va ularning o'rnatilgan/yo'q holatini ko'rsatadi.
+.TP
+.BR \-f ", " \-\-free
+Faqat bepul (\[fo]\[fc] yoki bepul tier) agentlar menyusini ochadi.
+.TP
+.BR \-t ", " \-\-top
+Faqat eng mashhur (top) agentlar menyusini ochadi.
+.TP
+.BR \-u ", " \-\-update
+O'rnatilgan barcha agentlarni yangilaydi.
+.TP
+.BR \-d ", " \-\-doctor
+Muhitni tekshiradi (node/npm/python/fzf, PATH, agentlar holati).
+.TP
+.BR \-a ", " \-\-add
+Interaktiv tarzda yangi agent qo'shadi.
+.TP
+.BR \-v ", " \-\-version
+Aidevix CLI versiyasini ko'rsatadi.
+.TP
+.BR \-h ", " \-\-help
+Yordam matnini ko'rsatadi.
+.SH "EXIT STATUS"
+.TP
+.B 0
+Muvaffaqiyat (yoki foydalanuvchi bekor qildi).
+.TP
+.B 1
+Umumiy yoki konfiguratsiya xatosi.
+.TP
+.B 2
+Noto'g'ri argument.
+.TP
+.B 127
+Kerakli buyruq (fzf yoki tanlangan agent) topilmadi.
+.SH ENVIRONMENT
+.TP
+.B AI_PULT_CONFIG
+Boshqa konfiguratsiya faylining yo'li.
+.TP
+.B AIDEVIX_NO_AUTOUPDATE
+1 bo'lsa avtomatik yangilanishni o'chiradi.
+.TP
+.B AIDEVIX_UPDATE_INTERVAL
+Yangilanish tekshiruvi oralig'i (sekund, standart 10800).
+.TP
+.B NO_COLOR
+Ranglarni o'chiradi.
+.TP
+.B AI_NO_ANIM
+Animatsiyalarni o'chiradi.
+.SH FILES
+.TP
+.I ~/.config/ai-cli/agents.conf
+Foydalanuvchi qo'shgan agentlar.
+.TP
+.I ~/.local/state/ai-cli/last
+Oxirgi tanlangan agent.
+.SH EXAMPLES
+.TP
+.B aidevix
+Interaktiv menyuni ochadi.
+.TP
+.B aidevix claude
+Claude Code'ni to'g'ridan-to'g'ri ishga tushiradi.
+.TP
+.B aidevix \-\-free
+Faqat bepul agentlarni ko'rsatadi.
+.SH AUTHOR
+SUNNATBEE <yusupovsunnatbek32@gmail.com>
+.SH "SEE ALSO"
+To'liq hujjat: https://github.com/SUNNATBEE/sunnatbeeCLI
