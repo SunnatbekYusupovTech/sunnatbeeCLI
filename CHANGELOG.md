@@ -7,6 +7,12 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+### Qo'shildi
+- **9 ta yangi agent** (jami 24 ta): Open Interpreter, OpenHands, SWE-agent,
+  Cline CLI, Kilo CLI, Roo Code CLI, Grok Build, Antigravity, GitHub CLI.
+  Ochiq manbali / bepullar `🆓 bepul` statusi bilan belgilandi va
+  `aidevix --free`da chiqadi (endi 12+ bepul agent).
+
 ### O'zgartirildi
 - **CLI o'rnatish animatsiyasi yangilandi** — endi o'rnatish davomida chiroyli,
   gradientli "komet" progress-bar (chap-o'ngга sakraydigan, izli) + spinner va

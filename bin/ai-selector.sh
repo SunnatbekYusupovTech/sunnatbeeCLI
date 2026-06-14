@@ -296,7 +296,10 @@ parse_agents() {
 # Chiqish formati: NAME\tDESC\tBINARY\tCOMMAND\tINSTALL\tCATEGORY\tSTATUS
 build_rows() {
   local config="$1" name desc binary command install category auth url status
-  while IFS=$'\t' read -r name desc binary command install category auth url; do
+  # IFS=US (0x1f) — TAB whitespace bo'lgani uchun bo'sh maydonlarni "yutib" yuboradi
+  # (masalan install bo'sh bo'lsa, keyingi maydonlar siljiydi). Shu sababli TAB'ni
+  # non-whitespace ajratgich (\037)ga o'giramiz — bo'sh maydonlar saqlanadi.
+  while IFS=$'\037' read -r name desc binary command install category auth url; do
     if command -v "$binary" >/dev/null 2>&1; then
       status="✓ o'rnatilgan"
     else
@@ -305,7 +308,7 @@ build_rows() {
     # Maydon tartibi: status 7-, auth 8-, url 9- (preview/menu $7 status'ga tayanadi).
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
       "$name" "$desc" "$binary" "$command" "$install" "$category" "$status" "$auth" "$url"
-  done < <(parse_agents "$config")
+  done < <(parse_agents "$config" | tr '\t' '\037')
 }
 
 # --- --list rejimi --------------------------------------------------------
@@ -315,10 +318,10 @@ list_agents() {
   printf '\n%s%-18s %-14s %-9s %-34s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "GURUH" "IZOH" "LOGIN" "$C_RESET"
   printf '%s\n' "------------------------------------------------------------------------------------------"
   local name desc binary command install category status auth url color
-  while IFS=$'\t' read -r name desc binary command install category status auth url; do
+  while IFS=$'\037' read -r name desc binary command install category status auth url; do
     if [[ "$status" == *"✓"* ]]; then color="$C_GREEN"; else color="$C_RED"; fi
     printf '%-18s %b%-14s%b %-9s %-34s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "$desc" "$auth"
-  done < <(build_rows "$config")
+  done < <(build_rows "$config" | tr '\t' '\037')
 }
 
 # --- Preview (fzf tomonidan qism-jarayon sifatida chaqiriladi) -------------
@@ -670,7 +673,7 @@ update_agents() {
   local name desc binary command install category status auth url
   local checked=0 ok=0 fail=0
 
-  while IFS=$'\t' read -r name desc binary command install category status auth url; do
+  while IFS=$'\037' read -r name desc binary command install category status auth url; do
     command -v "$binary" >/dev/null 2>&1 || continue
     checked=$((checked + 1))
     if [[ -z "$install" ]]; then
@@ -685,7 +688,7 @@ update_agents() {
     fi
     rm -f "${SPIN_LOG:-}" 2>/dev/null || true
     trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
-  done <<<"$rows"
+  done < <(printf '%s\n' "$rows" | tr '\t' '\037')
 
   if [[ "$checked" -eq 0 ]]; then
     log_warn "O'rnatilgan agent topilmadi — yangilash uchun avval agent o'rnating."
