@@ -65,7 +65,7 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 | 🪄 | **Avtomatik o'rnatish** | Tanlangan CLI yo'q bo'lsa — ruxsat so'rab o'zi o'rnatadi |
 | 🔐 | **Login yo'riqnomasi** | Har agent uchun qaysi login/API kalit kerakligi ko'rsatiladi; kalitlar saqlanmaydi |
 | 🚀 | **Tezkor ishga tushirish** | `aidevix claude` — menyusiz, to'g'ridan-to'g'ri |
-| 🕘 | **Oxirgi tanlovni eslaydi** | Eng so'nggi ishlatilgan agent ro'yxat tepasida |
+| 📊 | **Lokal statistika** | Har agent necha marta ishlatilganini sanaydi; menyu va `--list` eng ko'p ishlatilgan bo'yicha tartiblanadi (yonida `· N×`). **Faqat shu kompyuterda** — hech qayoqqa yuborilmaydi |
 | 🪄 | **fzf avtomatik o'rnatiladi** | O'rnatishda fzf'ni o'zi yuklab oladi (sudo kerak emas); bo'lmasa raqamli menyuga o'tadi |
 | 🔄 | **Avtomatik yangilanish** | Loyiha yangilansa — `aidevix` o'zini jim yangilaydi va "nima yangilangani"ni ko'rsatadi (qo'lda hech narsa qilish shart emas) |
 | ♻️ | **`aidevix --update`** | O'rnatilgan barcha agentlarni bir buyruq bilan yangilaydi |

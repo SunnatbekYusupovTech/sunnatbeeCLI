@@ -62,7 +62,7 @@ interactive menu. Works in `bash`, `zsh`, `cmd` and `PowerShell`.
 | 🪄 | **Auto-install** | If the chosen CLI is missing, it asks for permission and installs it |
 | 🔐 | **Login guidance** | Shows which login/API key each agent needs; keys are never stored |
 | 🚀 | **Quick launch** | `aidevix claude` — straight to the agent, no menu |
-| 🕘 | **Remembers last choice** | The most recently used agent appears at the top |
+| 📊 | **Local usage stats** | Counts how many times you launch each agent; the menu and `--list` are sorted by most-used (shown as `· N×`). **Stays on your machine** — nothing is sent anywhere |
 | 🪄 | **fzf installs itself** | Downloads fzf during install (no sudo); falls back to a numeric menu |
 | 🔄 | **Auto-update** | When the project updates, `aidevix` quietly updates itself and shows what changed |
 | ♻️ | **`aidevix --update`** | Updates all installed agents with one command |
