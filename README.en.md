@@ -4,7 +4,7 @@
 
 # ✦ Aidevix CLI
 
-### *One command. 23 top AI CLIs. Endless possibilities.*
+### *One command. 28 top AI CLIs. Endless possibilities.*
 
 Type `aidevix` → pick from the list → the CLI launches automatically.
 Not installed yet? It installs itself. 🪄
@@ -42,7 +42,7 @@ Not installed yet? It installs itself. 🪄
 
 ## 📖 About
 
-**Aidevix CLI** is a single-command launcher for 23 top terminal AI CLI agents
+**Aidevix CLI** is a single-command launcher for 28 top terminal AI CLI agents
 (Claude Code, Codex, Gemini, Copilot, Aider, Ollama and more) through one
 interactive menu. Works in `bash`, `zsh`, `cmd` and `PowerShell`.
 
@@ -58,7 +58,7 @@ interactive menu. Works in `bash`, `zsh`, `cmd` and `PowerShell`.
 |---|---|---|
 | 🎨 | **Polished design** | AD logo + gradient banner, live **spinner** animation, colored preview — clean and modern |
 | ⚡ | **One-command install** | `curl ... \| bash` — the rest is automatic |
-| 🎛️ | **A single `aidevix` menu** | 23 top AI CLIs in one interactive list (status + preview) |
+| 🎛️ | **A single `aidevix` menu** | 28 top AI CLIs in one interactive list (status + preview) |
 | 🪄 | **Auto-install** | If the chosen CLI is missing, it asks for permission and installs it |
 | 🔐 | **Login guidance** | Shows which login/API key each agent needs; keys are never stored |
 | 🚀 | **Quick launch** | `aidevix claude` — straight to the agent, no menu |
@@ -105,6 +105,11 @@ interactive menu. Works in `bash`, `zsh`, `cmd` and `PowerShell`.
 | 21 | 🤖 Grok Build | `grok` | Coding | 💳 / 🌐 |
 | 22 | 🚀 Antigravity | `antigravity` | Coding | 🆓 **free** |
 | 23 | 🐙 GitHub CLI | `gh` | Tools | 🆓 **free** |
+| 24 | 🛡️ Freebuff | `freebuff` | Coding | 🌐 |
+| 25 | 🐝 Codebuff | `codebuff` | Coding | 🆓 / 🔑 / 💳 |
+| 26 | 🧰 gptme | `gptme` | Agent | 🆓 **free** |
+| 27 | 💬 Shell GPT | `sgpt` | Chat | 🔑 |
+| 28 | 🪄 Mods | `mods` | Chat | 🔑 |
 
 > **Login icons:** 🔑 API key · 🌐 browser login · 💳 subscription · 🆓 **free** (open source / free tier).
 > 💡 **`aidevix --free`** shows only free agents (11+).

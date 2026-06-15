@@ -4,7 +4,7 @@
 
 # ✦ Aidevix CLI
 
-### *Bitta buyruq. 23 ta top AI CLI. Cheksiz imkoniyat.*
+### *Bitta buyruq. 28 ta top AI CLI. Cheksiz imkoniyat.*
 
 `aidevix` deb yozing → ro'yxatdan tanlang → CLI avtomatik ishga tushadi.
 O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
@@ -45,7 +45,7 @@ O'rnatilmagan bo'lsa — o'zi o'rnatadi. 🪄
 
 ## 📖 Loyiha haqida
 
-**Aidevix CLI** — terminaldagi 23 ta top AI CLI agentini (Claude Code, Codex,
+**Aidevix CLI** — terminaldagi 28 ta top AI CLI agentini (Claude Code, Codex,
 Gemini, Copilot, Aider, Ollama va h.k.) yagona interaktiv menyu orqali bitta
 buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlaydi.
 
@@ -61,7 +61,7 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 |---|---|---|
 | 🎨 | **Professional dizayn** | AD logosi + gradientli banner, jonli **spinner** animatsiyasi, rangli preview — toza va zamonaviy |
 | ⚡ | **Bir buyruq bilan o'rnatish** | `curl ... \| bash` — qolgani avtomatik |
-| 🎛️ | **Yagona `aidevix` menyusi** | 23 ta top AI CLI bitta interaktiv ro'yxatda (status + preview) |
+| 🎛️ | **Yagona `aidevix` menyusi** | 28 ta top AI CLI bitta interaktiv ro'yxatda (status + preview) |
 | 🪄 | **Avtomatik o'rnatish** | Tanlangan CLI yo'q bo'lsa — ruxsat so'rab o'zi o'rnatadi |
 | 🔐 | **Login yo'riqnomasi** | Har agent uchun qaysi login/API kalit kerakligi ko'rsatiladi; kalitlar saqlanmaydi |
 | 🚀 | **Tezkor ishga tushirish** | `aidevix claude` — menyusiz, to'g'ridan-to'g'ri |
@@ -108,6 +108,11 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 | 21 | 🤖 Grok Build | `grok` | Coding | 💳 / 🌐 |
 | 22 | 🚀 Antigravity | `antigravity` | Coding | 🆓 **bepul** |
 | 23 | 🐙 GitHub CLI | `gh` | Tools | 🆓 **bepul** |
+| 24 | 🛡️ Freebuff | `freebuff` | Coding | 🌐 |
+| 25 | 🐝 Codebuff | `codebuff` | Coding | 🆓 / 🔑 / 💳 |
+| 26 | 🧰 gptme | `gptme` | Agent | 🆓 **bepul** |
+| 27 | 💬 Shell GPT | `sgpt` | Chat | 🔑 |
+| 28 | 🪄 Mods | `mods` | Chat | 🔑 |
 
 > **Login belgilari:** 🔑 API kalit · 🌐 brauzer orqali login · 💳 obuna · 🆓 **bepul** (ochiq manba / bepul tier).
 > 💡 **`aidevix --free`** — faqat bepul agentlarni ko'rsatadi (11+ ta).
@@ -537,7 +542,7 @@ aidevix-cli/
 │   ├── _aidevix          # zsh native completion
 │   └── aidevix.fish      # fish completion
 └── config/
-    └── agents.conf       # Agentlar ro'yxati (23 ta top AI CLI)
+    └── agents.conf       # Agentlar ro'yxati (28 ta top AI CLI)
 ```
 
 ---
