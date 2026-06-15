@@ -67,6 +67,15 @@ GLOBAL_CACHE="$STATE_DIR/global_stats_cache"         # /v1/stats JSON keshi
 GLOBAL_STAMP="$STATE_DIR/global_stats_check"         # keshni yangilash throttle vaqti
 GLOBAL_HINT_FILE="$STATE_DIR/global_stats_hint"      # bir martalik eslatma ko'rsatilganini belgilaydi
 
+# --- npm yangilanish eslatmasi (notify) -----------------------------------
+# npm orqali o'rnatilganlarda git auto_update ishlamaydi (`.git` yo'q). Shuning
+# uchun npm registry'dan eng so'nggi versiyani FONDA tekshirib, yangisi chiqsa
+# "npm update -g aidevix" buyrug'ini eslatamiz (majburlamaymiz).
+NPM_PKG="aidevix"                                    # npm registry'dagi paket nomi
+NPM_LATEST_CACHE="$STATE_DIR/npm_latest"             # eng so'nggi versiya keshi
+NPM_CHECK_STAMP="$STATE_DIR/npm_check"               # tekshirishni throttle vaqti
+NPM_NOTIFIED_FILE="$STATE_DIR/npm_notified"          # eslatilgan oxirgi versiya (takror eslatmaslik)
+
 # Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
 DEFAULT_CATEGORY="AI"
 
@@ -1125,6 +1134,83 @@ auto_update() {
   return 0
 }
 
+# is_npm_install — paket npm (global) node_modules ichidan ishlayaptimi?
+# Faqat shunda "npm update" maslahati to'g'ri bo'ladi (git/brew/scoop emas).
+is_npm_install() {
+  case "$PROJECT_ROOT" in
+    */node_modules/*|*/node_modules) return 0 ;;
+    *)                               return 1 ;;
+  esac
+}
+
+# version_gt <a> <b> — semver a, b dan KATTAmi? (a>b → 0/true). Tashqi dasturga
+# tayanmaydi: nuqta bilan ajratib, maydonma-maydon sonli taqqoslaydi. Raqam
+# bo'lmagan qism (masalan "-beta") 0 deb olinadi — yetarli darajada ehtiyotkor.
+version_gt() {
+  local a="$1" b="$2"
+  [[ "$a" == "$b" ]] && return 1
+  local IFS=.
+  # Nuqta bo'yicha ataylab bo'lib olamiz (semver maydonlari).
+  # shellcheck disable=SC2206
+  local -a A=($a) B=($b)
+  local i max=${#A[@]}
+  (( ${#B[@]} > max )) && max=${#B[@]}
+  for (( i=0; i<max; i++ )); do
+    local x="${A[i]:-0}" y="${B[i]:-0}"
+    [[ "$x" =~ ^[0-9]+$ ]] || x=0
+    [[ "$y" =~ ^[0-9]+$ ]] || y=0
+    (( 10#$x > 10#$y )) && return 0
+    (( 10#$x < 10#$y )) && return 1
+  done
+  return 1
+}
+
+# fetch_npm_latest — npm registry'dan eng so'nggi versiyani FONDA keshlaydi
+# (throttled, std 3 soat). Bloklamaydi: joriy ishga tushish eski keshni o'qiydi.
+fetch_npm_latest() {
+  [[ -n "${CI:-}" ]] && return 0
+  command -v curl >/dev/null 2>&1 || return 0
+  local now interval last
+  interval="${AIDEVIX_UPDATE_INTERVAL:-10800}"
+  now="$(date +%s 2>/dev/null || echo 0)"
+  if [[ -r "$NPM_CHECK_STAMP" && -r "$NPM_LATEST_CACHE" ]]; then
+    last="$(cat "$NPM_CHECK_STAMP" 2>/dev/null || echo 0)"; [[ "$last" =~ ^[0-9]+$ ]] || last=0
+    (( now - last < interval )) && return 0
+  fi
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  # dist-tags endpoint'i kichik: {"latest":"X.Y.Z", ...}. sed bilan ajratamiz.
+  ( curl -fsS -m 5 "https://registry.npmjs.org/-/package/$NPM_PKG/dist-tags" 2>/dev/null \
+      | sed -n 's/.*"latest":"\([0-9][0-9A-Za-z.\-]*\)".*/\1/p' >"$NPM_LATEST_CACHE.tmp" 2>/dev/null \
+      && [[ -s "$NPM_LATEST_CACHE.tmp" ]] \
+      && mv -f "$NPM_LATEST_CACHE.tmp" "$NPM_LATEST_CACHE" 2>/dev/null \
+      && printf '%s\n' "$now" >"$NPM_CHECK_STAMP" 2>/dev/null \
+      || rm -f "$NPM_LATEST_CACHE.tmp" 2>/dev/null ) >/dev/null 2>&1 &
+  return 0
+}
+
+# maybe_npm_update_hint — npm o'rnatishda yangi versiya bo'lsa, BIR MARTA (har
+# yangi versiya uchun) yangilash buyrug'ini eslatadi. Jim, majburlamaydi.
+# O'chirish: AIDEVIX_NO_AUTOUPDATE=1 (yoki CI).
+maybe_npm_update_hint() {
+  [[ -n "${AIDEVIX_NO_AUTOUPDATE:-}" || -n "${CI:-}" ]] && return 0
+  is_npm_install || return 0
+  fetch_npm_latest                       # keyingi safar uchun fonda yangilaydi
+  [[ -r "$NPM_LATEST_CACHE" ]] || return 0
+  local latest; latest="$(cat "$NPM_LATEST_CACHE" 2>/dev/null || true)"
+  [[ "$latest" =~ ^[0-9]+\.[0-9]+ ]] || return 0
+  version_gt "$latest" "$AIDEVIX_VERSION" || return 0
+  # Shu versiya allaqachon eslatilgan bo'lsa — qayta bezovta qilmaymiz.
+  local notified=""
+  [[ -r "$NPM_NOTIFIED_FILE" ]] && notified="$(cat "$NPM_NOTIFIED_FILE" 2>/dev/null || true)"
+  [[ "$notified" == "$latest" ]] && return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  printf '%s\n' "$latest" >"$NPM_NOTIFIED_FILE" 2>/dev/null || true
+  panel "🔄 Aidevix yangi versiya bor ($AIDEVIX_VERSION → $latest)" \
+    "Yangilash uchun terminalga yozing:" \
+    "    npm update -g $NPM_PKG" \
+    "Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1"
+}
+
 # --- Argumentlar ----------------------------------------------------------
 main() {
   # Preview qism-jarayoni — augment va boshqa og'ir ishlardan oldin.
@@ -1138,7 +1224,7 @@ main() {
   # Avtomatik yangilanish — tez/meta buyruqlar uchun o'tkazib yuboramiz.
   case "${1:-}" in
     -h|--help|-v|--version|-s|--stats) : ;;
-    *)                                 auto_update "$@" ;;
+    *)                                 auto_update "$@"; maybe_npm_update_hint ;;
   esac
 
   case "${1:-}" in

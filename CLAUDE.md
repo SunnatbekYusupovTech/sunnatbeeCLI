@@ -45,6 +45,7 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 - `ensure_installed` — yo'q bo'lsa ruxsat so'rab o'rnatadi; OS-qo'llab-quvvatlamaslik / xato uchun aniq `panel` xabarlari.
 - `should_open_login_link` — 🔑 kalit kerak VA muhitda yo'q bo'lsagina login sahifa ochadi.
 - `doctor`, `update_agents`, `add_agent`, `auto_update` (git `fetch`+`reset --hard`, throttled).
+- **npm yangilanish eslatmasi (notify):** `is_npm_install` (PROJECT_ROOT `node_modules` ichidami), `version_gt` (semver taqqoslash, tashqi dastursiz), `fetch_npm_latest` (registry `dist-tags`'dan eng so'nggi versiyani FONDA keshlaydi, throttled), `maybe_npm_update_hint` (yangisi chiqsa `npm update -g aidevix`ni BIR MARTA eslatadi). Git o'rnatishlar uchun `auto_update` ishlaydi; npm uchun esa bu — chunki `.git` yo'q. `AIDEVIX_NO_AUTOUPDATE`/`CI` hurmat qilinadi.
 - **Lokal statistika:** `record_usage`/`read_usage` (`STATS_FILE`); `build_menu`/`list_agents` lokal sanoq bo'yicha saralaydi.
 - **Global statistika (opt-in):** `global_stats_enabled`, `set_global_stats`, `stats_cmd` (`--stats on|off`), `report_usage_global` (fonda POST), `fetch_global_stats` (fonda kesh, throttled), `global_install_tsv` (JSON→TSV reyting), `maybe_global_hint`. Backend: `server/`.
 
@@ -60,7 +61,7 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | O'zgaruvchi | Ta'siri |
 |-------------|---------|
 | `AI_PULT_CONFIG` | Aniq config yo'li (test/maxsus). Berilsa — faqat o'sha. |
-| `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanishni o'chiradi. |
+| `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanish (git) **va** npm yangilanish eslatmasini o'chiradi. |
 | `AIDEVIX_UPDATE_INTERVAL` | Tekshirish oralig'i (sekund, std 10800). |
 | `CI=1` | Animatsiya + auto_update **+ global statistika** o'chiq. |
 | `NO_COLOR` / `AI_NO_ANIM` | Rang / animatsiyani o'chiradi. |
