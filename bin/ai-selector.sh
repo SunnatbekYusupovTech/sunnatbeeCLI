@@ -102,8 +102,8 @@ KONFIGURATSIYA:
     2) ~/.config/ai-cli/agents.conf
     3) <repo>/config/agents.conf
 
-  Format (6-maydon ixtiyoriy):
-    NOM|BINARY|BUYRUQ|INSTALL|IZOH|KATEGORIYA
+  Format (6 majburiy + 2 ixtiyoriy maydon):
+    NOM|BINARY|BUYRUQ|INSTALL|IZOH|KATEGORIYA|AUTH|URL
 EOF
 }
 
