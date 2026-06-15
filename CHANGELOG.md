@@ -9,6 +9,11 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ### Qo'shildi
 <!-- ── 2026-06-15 sessiyasi ─────────────────────────────────────────── -->
+- **🎬 3D ishga tushirish loaderi** — agent ishga tushirilishidan oldin "AD"
+  monogrammasi gradient "sweep" (yorug'lik harakati, 3D his) va to'lib boruvchi
+  bar bilan animatsiya qiladi (`loader_3d`). TTY yo'q / `CI` / `NO_COLOR` /
+  `AI_NO_ANIM` da — oddiy bir qatorli matn. O'rnatish allaqachon `spin_run` bilan
+  animatsiyali edi.
 - **📊 Lokal ishlatish statistikasi** — har agent necha marta ishga tushirilgani
   `~/.local/state/ai-cli/usage` da saqlanadi (`record_usage`/`read_usage`). Menyu
   va `--list` eng ko'p ishlatilgan bo'yicha tartiblanadi; har agent yonida `· N×`.

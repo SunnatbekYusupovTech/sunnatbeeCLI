@@ -302,10 +302,63 @@ spin_run() {
   return "$rc"
 }
 
-# ui_launch <nom> — agentni ishga tushirishdan oldingi qisqa chiroyli ishora.
+# loader_3d <holat-matni> <nom> — 3D "AD" logosi + animatsion gradient "sweep"
+# va to'lib boruvchi loader. Agent ishga tushirilishi/o'rnatilishi oldidan
+# foydalanuvchiga "ishlayapti" hissini beradi. Logo bloklari uch o'lchamli
+# ko'rinadi; gradient ranglar har frame'da siljib, yorug'lik harakati (3D) effekti.
+# Animatsiya o'chiq (TTY yo'q / CI / NO_COLOR / AI_NO_ANIM) — oddiy bir qatorli matn.
+loader_3d() {
+  local status="$1" name="${2:-}"
+  if [[ "${AI_ANIM:-0}" -ne 1 ]]; then
+    printf '\n  %s%s%s%s  %s%s%s\n\n' \
+      "${C_BOLD}" "${C_G3}" "$status" "${C_RESET}" "${C_TITLE}" "$name" "${C_RESET}" >&2
+    return 0
+  fi
+
+  local -a logo
+  if [[ "${UI_UTF8:-1}" -eq 1 ]]; then
+    logo=( \
+'  █████╗ ██████╗ ' \
+' ██╔══██╗██╔══██╗' \
+' ███████║██║  ██║' \
+' ██╔══██║██║  ██║' \
+' ██║  ██║██████╔╝' \
+' ╚═╝  ╚═╝╚═════╝ ' )
+  else
+    logo=( '  /\  ___ ' ' /__\ |  |' '      |__|' )
+  fi
+  local nrows=${#logo[@]}
+  # Gradient sweep palitrasi (cyan→ko'k→pushti, aylanma — yorug'lik harakati).
+  local -a pal=(51 45 39 33 99 201 201 99 33 39 45 51)
+  local np=${#pal[@]} barw=22 frames=${#pal[@]}
+  local f row idx filled k bar ch
+
+  printf '\033[?25l' >&2                          # kursorni yashir
+  local i; for ((i = 0; i < nrows + 1; i++)); do printf '\n' >&2; done  # joy ochish
+
+  for ((f = 0; f < frames; f++)); do
+    printf '\033[%dA' "$((nrows + 1))" >&2        # logo+bar boshiga qaytamiz
+    for ((row = 0; row < nrows; row++)); do
+      idx=$(( (row + f) % np ))
+      printf '\r\033[K  %s\033[38;5;%sm%s%s\n' \
+        "${C_BOLD}" "${pal[idx]}" "${logo[row]}" "${C_RESET}" >&2
+    done
+    filled=$(( (f + 1) * barw / frames )); bar=''
+    for ((k = 0; k < barw; k++)); do
+      if   (( k <  filled - 1 )); then ch='█'
+      elif (( k == filled - 1 )); then ch='▓'
+      else ch='░'; fi
+      bar+="$ch"
+    done
+    printf '\r\033[K  %s\033[38;5;%sm%s%s  %s%s%s %s%s%s\n' \
+      "${C_BOLD}" "${pal[f % np]}" "$bar" "${C_RESET}" \
+      "${C_G3}" "$status" "${C_RESET}" "${C_TITLE}" "$name" "${C_RESET}" >&2
+    sleep 0.05
+  done
+  printf '\033[?25h' >&2                           # kursorni qaytar
+}
+
+# ui_launch <nom> — agentni ishga tushirishdan oldingi 3D animatsion loader.
 ui_launch() {
-  local name="$1"
-  printf '\n  %s%s🚀 Ishga tushirilmoqda%s  %s%s%s\n\n' \
-    "$C_BOLD" "$C_G3" "$C_RESET" "$C_TITLE" "$name" "$C_RESET" >&2
-  [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.3 || true
+  loader_3d "🚀 Ishga tushirilmoqda" "${1:-}"
 }
