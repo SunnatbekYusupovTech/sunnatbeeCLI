@@ -264,7 +264,7 @@ stats_cmd() {
       global_stats_enabled && state="yoqilgan"
       panel "📊 Global statistika — holat: $state" \
         "Server:   $AIDEVIX_STATS_URL" \
-        "Yuboriladi (yoqilганда): agent nomi + hodisa turi (shaxsiy ma'lumotsiz)" \
+        "Yuboriladi (yoqilganda): agent nomi + hodisa turi (shaxsiy ma'lumotsiz)" \
         "" \
         "Yoqish:   aidevix --stats on" \
         "O'chirish: aidevix --stats off"
