@@ -50,6 +50,9 @@ USER_CONFIG="$HOME/.config/ai-cli/agents.conf"
 # Oxirgi tanlangan agentni eslab qolish uchun holat fayli.
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ai-cli"
 STATE_FILE="$STATE_DIR/last"
+# Lokal ishlatish statistikasi: har agent necha marta ishga tushirilgani.
+# FAQAT shu kompyuterda saqlanadi — hech qayoqqa yuborilmaydi. Format: "<son>\t<nom>".
+STATS_FILE="$STATE_DIR/usage"
 # Login/auth eslatmasi qaysi agentlar uchun allaqachon ko'rsatilganini saqlaydi.
 SEEN_AUTH_FILE="$STATE_DIR/seen_auth"
 
@@ -167,6 +170,37 @@ read_last() { [[ -r "$STATE_FILE" ]] && cat "$STATE_FILE" 2>/dev/null || true; }
 save_last() {
   mkdir -p "$STATE_DIR" 2>/dev/null || return 0
   printf '%s\n' "$1" >"$STATE_FILE" 2>/dev/null || true
+}
+
+# --- Lokal ishlatish statistikasi (faqat shu kompyuter) -------------------
+# record_usage <nom> — agentning lokal sanog'ini +1 qiladi. Eng-yaxshi-harakat:
+# har qanday xato bo'lsa ham agentni ishga tushirishga xalaqit bermaydi. awk
+# bilan yoziladi (bash 3.2 mos — assotsiativ massiv ishlatilmaydi).
+record_usage() {
+  local name="$1"
+  [[ -n "$name" ]] || return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  [[ -f "$STATS_FILE" ]] || : >"$STATS_FILE" 2>/dev/null || return 0
+  local tmp; tmp="$(mktemp 2>/dev/null)" || return 0
+  if awk -F'\t' -v n="$name" '
+        BEGIN { OFS = "\t" }
+        $2 == n { print ($1 + 1), $2; found = 1; next }
+        NF      { print }
+        END     { if (!found) print 1, n }
+      ' "$STATS_FILE" >"$tmp" 2>/dev/null; then
+    mv -f "$tmp" "$STATS_FILE" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+  else
+    rm -f "$tmp" 2>/dev/null
+  fi
+  return 0
+}
+
+# read_usage <nom> — agentning lokal sanog'ini chiqaradi (yo'q bo'lsa 0).
+read_usage() {
+  local name="$1"
+  [[ -r "$STATS_FILE" ]] || { printf '0'; return 0; }
+  awk -F'\t' -v n="$name" '$2 == n { print $1 + 0; f = 1; exit } END { if (!f) print 0 }' \
+    "$STATS_FILE" 2>/dev/null || printf '0'
 }
 
 # --- Birinchi ishga tushirishda login/auth yo'riqnomasi --------------------
@@ -345,16 +379,24 @@ build_rows() {
 }
 
 # --- --list rejimi --------------------------------------------------------
+# Agentlar lokal ishlatish sanog'i bo'yicha KAMAYISH tartibida ko'rsatiladi
+# (eng ko'p ishlatilgan tepada); "MARTA" ustuni shu sanoqni ko'rsatadi.
 list_agents() {
   local config; config="$(resolve_config)"
   log_info "Konfiguratsiya: $config"
-  printf '\n%s%-18s %-14s %-9s %-34s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "GURUH" "IZOH" "LOGIN" "$C_RESET"
-  printf '%s\n' "------------------------------------------------------------------------------------------"
-  local name desc binary command install category status auth url color
-  while IFS=$'\037' read -r name desc binary command install category status auth url; do
+  local statsfile="$STATS_FILE"; [[ -r "$statsfile" ]] || statsfile=/dev/null
+  printf '\n%s%-18s %-14s %-9s %-7s %-34s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "GURUH" "MARTA" "IZOH" "LOGIN" "$C_RESET"
+  printf '%s\n' "-------------------------------------------------------------------------------------------------"
+  local name desc binary command install category status auth url count color
+  while IFS=$'\037' read -r name desc binary command install category status auth url count; do
     if [[ "$status" == *"✓"* ]]; then color="$C_GREEN"; else color="$C_RED"; fi
-    printf '%-18s %b%-14s%b %-9s %-34s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "$desc" "$auth"
-  done < <(build_rows "$config" | tr '\t' '\037')
+    printf '%-18s %b%-14s%b %-9s %-7s %-34s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "${count}×" "$desc" "$auth"
+  done < <(
+    build_rows "$config" | awk -F'\t' -v sf="$statsfile" '
+      BEGIN { while ((getline line < sf) > 0) { m = split(line, a, "\t"); if (m >= 2) cnt[a[2]] = a[1] } }
+      { c = cnt[$1] + 0; printf "%010d\t%06d\t%s\t%d\n", c, (++idx), $0, c }
+    ' | sort -t"$(printf '\t')" -k1,1nr -k2,2n | cut -f3- | tr '\t' '\037'
+  )
 }
 
 # --- Preview (fzf tomonidan qism-jarayon sifatida chaqiriladi) -------------
@@ -395,12 +437,22 @@ preview_agent() {
     }' "$datafile"
 }
 
-# --- Menyu qatorlarini qurish (oxirgi tanlov yuqorida) ---------------------
-# Chiqish formati: KO'RINISH\tNAME  (NAME — qidirish uchun yashirin maydon)
+# --- Menyu qatorlarini qurish (eng ko'p ishlatilgan yuqorida) --------------
+# Chiqish formati: KO'RINISH\tNAME  (NAME — qidirish uchun yashirin maydon).
+# Qatorlar lokal ishlatish sanog'i bo'yicha KAMAYISH tartibida; teng bo'lsa
+# config tartibi saqlanadi. Har agent yonida "· N×" sanoq ko'rsatiladi.
 build_menu() {
-  local rows="$1" last="$2"
-  awk -F'\t' -v last="$last" -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
+  local rows="$1" statsfile="${2:-}"
+  [[ -n "$statsfile" && -r "$statsfile" ]] || statsfile=/dev/null
+  awk -F'\t' -v sf="$statsfile" -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
             -v t="${C_TITLE:-}" -v gy="${C_GRAY:-}" -v b="${C_BOLD:-}" '
+    BEGIN {
+      # Statistika faylidan nom -> son xaritasini quramiz.
+      while ((getline line < sf) > 0) {
+        m = split(line, a, "\t")
+        if (m >= 2) cnt[a[2]] = a[1]
+      }
+    }
     {
       name=$1; desc=$2; status=$7; auth=$8;
       if (status ~ /✓/) { icon = g "✓" z } else { icon = r "✗" z }
@@ -409,16 +461,13 @@ build_menu() {
       else if (index(auth, "🌐")) badge = "🌐";
       else if (index(auth, "🔑")) badge = "🔑";
       else if (index(auth, "💳")) badge = "💳";
-      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s", icon, b, t, name, z, gy, desc, z, badge)
-      line = disp "\t" name
-      if (name == last && last != "") { first = line }
-      else { rest[++n] = line }
+      c = cnt[name] + 0;
+      use = (c > 0) ? sprintf("  %s·%d×%s", gy, c, z) : "";
+      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s", icon, b, t, name, z, gy, desc, z, badge, use)
+      # Tartiblash kalitlari: 1) sanoq (kamayish), 2) config indeksi (barqaror).
+      printf "%010d\t%06d\t%s\t%s\n", c, (++idx), disp, name
     }
-    END {
-      if (first != "") print first
-      for (i = 1; i <= n; i++) print rest[i]
-    }
-  ' <<<"$rows"
+  ' <<<"$rows" | sort -t"$(printf '\t')" -k1,1nr -k2,2n | cut -f3-
 }
 
 # --- fzf orqali tanlash ---------------------------------------------------
@@ -518,8 +567,7 @@ run_menu() {
       ;;
   esac
 
-  local last; last="$(read_last)"
-  local menu; menu="$(build_menu "$rows" "$last")"
+  local menu; menu="$(build_menu "$rows" "$STATS_FILE")"
 
   local name
   if command -v fzf >/dev/null 2>&1; then
@@ -549,6 +597,9 @@ launch_selected() {
   save_last "$name"
   ensure_installed "$name" "$binary" "$install"
   maybe_show_auth_note "$name" "$auth" "$url"
+  # Lokal statistika: faqat haqiqatan ishga tushganda (o'rnatish muvaffaqiyatli,
+  # bekor qilinmagan) sanoqni oshiramiz.
+  record_usage "$name"
   launch_agent "$name" "$binary" "$command"
 }
 
