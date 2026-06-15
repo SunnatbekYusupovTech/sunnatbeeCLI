@@ -8,6 +8,29 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 ## [Nashr qilinmagan]
 
 ### Qo'shildi
+<!-- ── 2026-06-15 sessiyasi ─────────────────────────────────────────── -->
+- **📊 Lokal ishlatish statistikasi** — har agent necha marta ishga tushirilgani
+  `~/.local/state/ai-cli/usage` da saqlanadi (`record_usage`/`read_usage`). Menyu
+  va `--list` eng ko'p ishlatilgan bo'yicha tartiblanadi; har agent yonida `· N×`.
+  `--list` ga "MARTA" ustuni. Faqat shu kompyuterda — hech qayoqqa yuborilmaydi.
+  Testlar: `tests/usage.bats` (7).
+- **🌍 Global statistika (OPT-IN, standart o'CHIQ)** — `aidevix --stats [on|off]`.
+  Yoqilganda menyuda `🔥 #reyting · son` ko'rinadi va agent ishga tushganda FAQAT
+  agent nomi + hodisa turi (`install`/`launch`) serverga yuboriladi (IP/ID/kalit
+  YO'Q). `report_usage_global` (fonda, jim, bloklamaydi), `fetch_global_stats`
+  (keshli, throttled), `global_install_tsv`, `maybe_global_hint`, `doctor`da holat.
+  Testlar: `tests/global_stats.bats` (9). Klyent↔server e2e jonli tasdiqlandi.
+- **🛰️ Global statistika backend (`server/`)** — Fastify 5 + ioredis +
+  `@fastify/rate-limit`; Redis sorted-set (`ZINCRBY`/`ZREVRANGE`) bilan atomik
+  sanoq va reyting. Endpoint'lar: `POST /v1/events`, `GET /v1/stats`, `GET /health`.
+  Dockerfile (non-root, healthcheck) + `railway.json`. Railway'ga deploy qilingan
+  (`https://sunnatbeecli-production.up.railway.app`). CI: `.github/workflows/server-ci.yml`.
+  Testlar: `node --test` (6, ioredis-mock).
+- **🤖 5 yangi agent** — Freebuff, Codebuff, gptme, Shell GPT (sgpt), Mods
+  (jami 23 → 28). `--top` ro'yxatiga Codebuff va Freebuff qo'shildi.
+- **⌨️ `--stats` completion** (bash/zsh/fish) + man sahifa yozuvi + `SECURITY.md`
+  da OPT-IN telemetriya bo'limi (nima yuboriladi/yuborilmaydi).
+<!-- ── oldingi sessiyalar ───────────────────────────────────────────── -->
 - **🧪 Test to'plami (Bats)** — `tests/` ostida 38 ta avtomatlashtirilgan test:
   config parsing (`parse_agents`, `build_rows`, `trim`, `detect_install_tool`),
   CLI xulq-atvori (`--version`/`--help`/`--list`, noto'g'ri argumentlar,
@@ -36,9 +59,27 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
   GitHub stars (UZ va EN).
 
 ### O'zgardi
+<!-- ── 2026-06-15 sessiyasi ─────────────────────────────────────────── -->
+- **Menyu tartibi** — "oxirgi tanlov tepada" o'rniga "**eng ko'p ishlatilgan
+  tepada**" (lokal statistika bo'yicha; teng bo'lsa config tartibi saqlanadi).
+- README'da agent soni **23 → 28**; "oxirgi tanlovni eslaydi" xususiyat qatori
+  "**lokal statistika**" bilan almashtirildi (uz/en).
+- `usage()` config formati hujjati 8-maydonli (`...|AUTH|URL`) qilib to'g'rilandi.
+<!-- ── oldingi sessiyalar ───────────────────────────────────────────── -->
 - `bin/ai-selector.sh` oxiriga `source`-qorovuli qo'shildi (`BASH_SOURCE` ==
   `$0`) — endi skriptni testda `source` qilganda `main()` ishga tushmaydi;
   xulq-atvor o'zgarmaydi.
+
+### Tuzatildi
+<!-- ── 2026-06-15 sessiyasi ─────────────────────────────────────────── -->
+- **Tab-completion** endi repo config'dan ham agent nomlarini taklif qiladi.
+  Ilgari faqat (o'rnatuvchi bo'sh yaratadigan) foydalanuvchi config'ni o'qib,
+  `aidevix <TAB>` hech qanday agent ko'rsatmasdi. Testlar: `tests/completion.bats` (5).
+- **server:** Railway private Redis FAQAT IPv6 (AAAA) bergani uchun ioredis
+  standart `family:4` bilan ulana olmasdi → `family:0` (dual-stack) qo'shildi.
+- **server:** redis `error` hodisasi ishlovchisi qo'shildi (ilgari ulanish
+  bo'roni `[ioredis] Unhandled error event` log'ni to'ldirardi) — endi throttled.
+- `--stats` status matnidagi kirill harf xatosi (`yoqilганда` → `yoqilganda`).
 
 ## [1.1.0] — 2026-06-14
 
