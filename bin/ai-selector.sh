@@ -512,7 +512,7 @@ run_menu() {
       [[ -n "$rows" ]] || { log_info "Bepul agent topilmadi."; exit 0; }
       ;;
     top)
-      rows="$(awk -F'\t' -v tops="|claude|codex|gemini|copilot|cursor-agent|aider|opencode|qwen|" \
+      rows="$(awk -F'\t' -v tops="|claude|codex|gemini|copilot|cursor-agent|aider|opencode|qwen|codebuff|freebuff|" \
               'index(tops, "|" $3 "|") > 0' <<<"$rows")"
       [[ -n "$rows" ]] || { log_info "Top agent topilmadi."; exit 0; }
       ;;
