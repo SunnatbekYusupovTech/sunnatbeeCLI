@@ -7,6 +7,8 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+## [1.2.0] — 2026-06-15
+
 ### Qo'shildi
 <!-- ── 2026-06-15 sessiyasi ─────────────────────────────────────────── -->
 - **🎬 3D ishga tushirish loaderi** — agent ishga tushirilishidan oldin "AD"
@@ -35,6 +37,13 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
   (jami 23 → 28). `--top` ro'yxatiga Codebuff va Freebuff qo'shildi.
 - **⌨️ `--stats` completion** (bash/zsh/fish) + man sahifa yozuvi + `SECURITY.md`
   da OPT-IN telemetriya bo'limi (nima yuboriladi/yuborilmaydi).
+- **📦 npm yangilanish eslatmasi (notify)** — `npm install -g aidevix` bilan
+  o'rnatilganlarda (`.git` yo'q) git auto-update ishlamaydi. Endi `aidevix` npm
+  registry'dan eng so'nggi versiyani fonda tekshiradi va yangisi chiqsa
+  `npm update -g aidevix` ni har versiya uchun BIR MARTA eslatadi
+  (`is_npm_install`, `version_gt`, `fetch_npm_latest`, `maybe_npm_update_hint`).
+  Throttled, `AIDEVIX_NO_AUTOUPDATE`/`CI` hurmat qilinadi. Testlar:
+  `tests/npm_update.bats` (13).
 <!-- ── oldingi sessiyalar ───────────────────────────────────────────── -->
 - **🧪 Test to'plami (Bats)** — `tests/` ostida 38 ta avtomatlashtirilgan test:
   config parsing (`parse_agents`, `build_rows`, `trim`, `detect_install_tool`),

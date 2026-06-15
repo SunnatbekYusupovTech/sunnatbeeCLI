@@ -13,7 +13,7 @@
 class Aidevix < Formula
   desc "One command, 23 top AI CLIs — interactive launcher for terminal AI agents"
   homepage "https://github.com/SUNNATBEE/sunnatbeeCLI"
-  url "https://github.com/SUNNATBEE/sunnatbeeCLI/archive/refs/tags/v1.1.0.tar.gz"
+  url "https://github.com/SUNNATBEE/sunnatbeeCLI/archive/refs/tags/v1.2.0.tar.gz"
   # TODO: reliz tarball'ining haqiqiy sha256'sini qo'ying (yuqoridagi izohga qarang).
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
