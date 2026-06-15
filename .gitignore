@@ -12,3 +12,9 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+
+# Node (server/ backend)
+node_modules/
+.env
+*.log
+npm-debug.log*

@@ -1,0 +1,35 @@
+name: Server CI
+
+# Faqat backend (server/) o'zgarganda ishlaydi.
+on:
+  push:
+    branches: [main]
+    paths: ["server/**", ".github/workflows/server-ci.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["server/**", ".github/workflows/server-ci.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node testlari (server)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Bog'liqliklarni o'rnatish
+        run: npm ci
+
+      - name: Testlar (node --test)
+        run: npm test

@@ -31,6 +31,7 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | `bootstrap.sh` | `curl \| bash` bitta-buyruqli o'rnatuvchi (repo'ni `~/.ai-cli`ga klonlaydi). |
 | `uninstall.sh` | O'chirish. |
 | `tests/` | Bats testlari (`*.bats`, `test_helper.bash`, `fixtures/`). Qarang `tests/README.md`. |
+| `server/` | **Global statistika backend'i** (alohida Node loyihasi, npm paketiga kirmaydi). Fastify 5 + ioredis + `@fastify/rate-limit`; Redis sorted-set'lari (`ZINCRBY`/`ZREVRANGE`). Endpoint'lar: `POST /v1/events`, `GET /v1/stats`, `GET /health`. Railway'ga Dockerfile + `railway.json` bilan deploy. Testlar: `node --test` (ioredis-mock). CI: `.github/workflows/server-ci.yml` (faqat `server/**`). Klyent (aidevix) integratsiyasi hali ulanmagan — opt-in bo'lib qo'shiladi. |
 | `VERSION` | Yagona haqiqat manbai (SemVer). Release teg `vX.Y.Z` shunga mos bo'lishi shart. |
 | `.github/workflows/ci.yml` | CI: shellcheck · `bash -n` · agents.conf validatsiya · bats. |
 | `.github/workflows/release.yml` | Teg push'da GitHub Release. |
