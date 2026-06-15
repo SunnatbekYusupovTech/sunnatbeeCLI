@@ -8,6 +8,10 @@ export function createRedis() {
   const client = new Redis(config.redisUrl, {
     maxRetriesPerRequest: 3,
     enableReadyCheck: true,
+    // Railway private tarmog'i (redis.railway.internal) FAQAT IPv6 beradi,
+    // ioredis esa standart bo'yicha IPv4 (family:4) ni sinaydi → ulana olmaydi.
+    // family:0 ikkalasini ham sinaydi (mahalliy IPv4 uchun ham xavfsiz).
+    family: 0,
     // Ulanish uzilsa qayta urinadi, lekin so'rovni cheksiz osib qo'ymaydi.
     retryStrategy: (times) => Math.min(times * 200, 2000),
   });
