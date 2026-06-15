@@ -50,7 +50,20 @@ Aidevix — bu **AI CLI agentlarini tanlash va ishga tushirish uchun yo'naltiruv
 - **API kalitlaringizni ko'rmaydi va saqlamaydi.** Login/kalitlar to'g'ridan-to'g'ri
   tegishli agent (Claude, Codex, ...) tomonidan boshqariladi; Aidevix faqat eslatma
   ko'rsatadi va kerak bo'lsa rasmiy login sahifasini brauzerda ochadi.
-- Hech qanday telemetriya yoki ma'lumotni tashqariga yubormaydi.
+- **Standart holatda hech qanday telemetriya yubormaydi** (opt-in — pastга qarang).
+
+### 📊 Global statistika (OPT-IN — standart o'CHIQ)
+Aidevix ixtiyoriy global foydalanish statistikasini qo'llaydi, lekin u **standart
+holatda o'chiq**. Siz `aidevix --stats on` bilan **o'zingiz yoqsangizgina** ishlaydi.
+
+- **Yoqilganda nima yuboriladi:** FAQAT **agent nomi** (masalan "Claude Code") va
+  **hodisa turi** (`install` yoki `launch`). Boshqa hech narsa.
+- **Nima YUBORILMAYDI:** IP manzil, foydalanuvchi nomi/ID, API kalit, fayl yo'llari
+  yoki boshqa shaxsiy ma'lumot. Server yig'ma sanoqdan boshqasini saqlamaydi.
+- **Qayerga:** `AIDEVIX_STATS_URL` (standart — loyihaning ochiq backend'i, `server/`).
+- **O'chirish:** `aidevix --stats off`. Muhit orqali majburan: `AIDEVIX_GLOBAL_STATS=0`.
+- So'rovlar fonda, qisqa timeout bilan yuboriladi — agentni ishga tushirishni
+  hech qachon sekinlashtirmaydi yoki bloklamaydi.
 
 ### ⚠️ Ishonch chegaralari (trust boundaries) — diqqat
 1. **Uchinchi-tomon o'rnatuvchilari.** `config/agents.conf` dagi `INSTALL`

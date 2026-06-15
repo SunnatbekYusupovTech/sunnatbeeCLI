@@ -249,6 +249,7 @@ agent's details (status, command, install method) appear live.
 | `aidevix --update` | Updates all installed agents |
 | `aidevix --doctor` | Checks the environment (tools, PATH, agent status) |
 | `aidevix --add` | Adds a new agent interactively |
+| `aidevix --stats [on\|off]` | 📊 Global usage stats (**opt-in**, off by default). When on, the menu shows `🔥 #rank`; only the agent name + event type are sent (no personal data) |
 | `aidevix --version` | Shows the Aidevix CLI version |
 | `aidevix --help` | Prints help |
 

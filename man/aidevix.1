@@ -32,6 +32,11 @@ Muhitni tekshiradi (node/npm/python/fzf, PATH, agentlar holati).
 .BR \-a ", " \-\-add
 Interaktiv tarzda yangi agent qo'shadi.
 .TP
+.BR \-s ", " \-\-stats " [on|off]"
+Global statistika (opt-in, standart o'chiq) holatini ko'rsatadi yoki yoqadi/o'chiradi.
+Yoqilganda menyuda global reyting (\[char 0x1F525] #N) ko'rinadi va agent ishga
+tushganda faqat agent nomi + hodisa turi serverga yuboriladi (shaxsiy ma'lumotsiz).
+.TP
 .BR \-v ", " \-\-version
 Aidevix CLI versiyasini ko'rsatadi.
 .TP
@@ -60,6 +65,12 @@ Boshqa konfiguratsiya faylining yo'li.
 .TP
 .B AIDEVIX_UPDATE_INTERVAL
 Yangilanish tekshiruvi oralig'i (sekund, standart 10800).
+.TP
+.B AIDEVIX_GLOBAL_STATS
+Global statistika opt-in (1/0) \(em saqlangan holatdan ustun turadi.
+.TP
+.B AIDEVIX_STATS_URL
+Global statistika backend manzili (standart \(em loyihaning ochiq serveri).
 .TP
 .B NO_COLOR
 Ranglarni o'chiradi.

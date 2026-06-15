@@ -357,6 +357,7 @@ o'rnatishni taklif qiladi:
 | `aidevix --update` | O'rnatilgan barcha agentlarni yangilaydi |
 | `aidevix --doctor` | Muhitni tekshiradi (vositalar, PATH, agentlar holati) |
 | `aidevix --add` | Interaktiv tarzda yangi agent qo'shadi |
+| `aidevix --stats [on\|off]` | 📊 Global statistika (**opt-in**, standart o'chiq). Yoqilganda menyuda `🔥 #reyting` ko'rinadi; faqat agent nomi + hodisa turi yuboriladi (shaxsiy ma'lumotsiz) |
 | `aidevix --version` | Aidevix CLI versiyasini ko'rsatadi |
 | `aidevix --help` | Yordam matnini chiqaradi |
 

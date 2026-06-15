@@ -20,6 +20,7 @@ _aidevix() {
     '(-u --update)'{-u,--update}'[o'\''rnatilgan agentlarni yangilaydi]'
     '(-d --doctor)'{-d,--doctor}'[muhitni tekshiradi]'
     '(-a --add)'{-a,--add}'[interaktiv yangi agent qo'\''shadi]'
+    '(-s --stats)'{-s,--stats}'[global statistika (opt-in): on/off]'
     '(-v --version)'{-v,--version}'[versiyani ko'\''rsatadi]'
     '(-h --help)'{-h,--help}'[yordam matnini ko'\''rsatadi]'
   )

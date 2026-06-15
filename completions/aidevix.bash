@@ -10,7 +10,7 @@ _ai_complete() {
   local cur flags names self repo_cfg cfg
   local -a cfgs=()
   cur="${COMP_WORDS[COMP_CWORD]}"
-  flags="--list --free --top --update --doctor --add --version --help -l -f -t -u -d -a -v -h"
+  flags="--list --free --top --update --doctor --add --stats --version --help -l -f -t -u -d -a -s -v -h"
 
   # Faqat birinchi argument to'ldiriladi (qolganlari agentga uzatiladi).
   if [[ "$COMP_CWORD" -ne 1 ]]; then

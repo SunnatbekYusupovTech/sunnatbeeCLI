@@ -56,6 +56,17 @@ STATS_FILE="$STATE_DIR/usage"
 # Login/auth eslatmasi qaysi agentlar uchun allaqachon ko'rsatilganini saqlaydi.
 SEEN_AUTH_FILE="$STATE_DIR/seen_auth"
 
+# --- Global statistika (OPT-IN — standart o'CHIQ) -------------------------
+# Foydalanuvchi YOQSAGINA (aidevix --stats on) ishlaydi. Yoqilganda: agent
+# ishga tushganda FAQAT "agent nomi + hodisa turi" markaziy serverga yuboriladi
+# (IP/ID/shaxsiy ma'lumot YO'Q) va global reyting menyuda ko'rsatiladi.
+# Server: bepul, ochiq — qarang server/. URL'ni AIDEVIX_STATS_URL bilan o'zgartirish mumkin.
+AIDEVIX_STATS_URL="${AIDEVIX_STATS_URL:-https://sunnatbeecli-production.up.railway.app}"
+GLOBAL_OPTIN_FILE="$STATE_DIR/global_stats"          # "on"/"off" — opt-in holati
+GLOBAL_CACHE="$STATE_DIR/global_stats_cache"         # /v1/stats JSON keshi
+GLOBAL_STAMP="$STATE_DIR/global_stats_check"         # keshni yangilash throttle vaqti
+GLOBAL_HINT_FILE="$STATE_DIR/global_stats_hint"      # bir martalik eslatma ko'rsatilganini belgilaydi
+
 # Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
 DEFAULT_CATEGORY="AI"
 
@@ -96,6 +107,10 @@ TANLOVLAR:
   -u, --update    O'rnatilgan barcha agentlarni yangilaydi
   -d, --doctor    Muhitni tekshiradi (node/npm/python/fzf, PATH, agentlar)
   -a, --add       Interaktiv tarzda yangi agent qo'shadi
+  -s, --stats [on|off]
+                  Global statistika (opt-in): holatni ko'rsatadi yoki yoqadi/o'chiradi.
+                  Yoqilganda menyuda "🔥 #reyting" ko'rinadi. Faqat agent nomi +
+                  hodisa turi yuboriladi (shaxsiy ma'lumotsiz). Standart — o'chiq.
   -v, --version   Aidevix CLI versiyasini ko'rsatadi
   -h, --help      Ushbu yordam matnini ko'rsatadi
 
@@ -201,6 +216,143 @@ read_usage() {
   [[ -r "$STATS_FILE" ]] || { printf '0'; return 0; }
   awk -F'\t' -v n="$name" '$2 == n { print $1 + 0; f = 1; exit } END { if (!f) print 0 }' \
     "$STATS_FILE" 2>/dev/null || printf '0'
+}
+
+# ===========================================================================
+#  Global statistika (OPT-IN). Maxfiylik: yoqilgandagina, faqat agent nomi +
+#  hodisa turi yuboriladi. CI'da yoki curl yo'q bo'lsa — hech narsa qilinmaydi.
+# ===========================================================================
+
+# global_stats_enabled — global statistika yoqilganmi? (0 = ha, 1 = yo'q)
+# Tartib: AIDEVIX_GLOBAL_STATS env (1/0) ustun; aks holda opt-in fayli; std o'chiq.
+global_stats_enabled() {
+  case "${AIDEVIX_GLOBAL_STATS:-}" in
+    1|on|true|yes) return 0 ;;
+    0|off|false|no) return 1 ;;
+  esac
+  [[ -r "$GLOBAL_OPTIN_FILE" ]] && [[ "$(cat "$GLOBAL_OPTIN_FILE" 2>/dev/null)" == "on" ]]
+}
+
+# set_global_stats <on|off> — opt-in holatini saqlaydi.
+set_global_stats() {
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 1
+  printf '%s\n' "$1" >"$GLOBAL_OPTIN_FILE" 2>/dev/null || return 1
+}
+
+# stats_cmd [on|off] — `aidevix --stats` buyrug'i: holatni ko'rsatadi yoki o'zgartiradi.
+stats_cmd() {
+  local arg="${1:-}"
+  case "$arg" in
+    on)
+      set_global_stats on
+      panel "📊 Global statistika YOQILDI" \
+        "Rahmat! Endi agent ishga tushganda FAQAT quyidagi yuboriladi:" \
+        "    • agent nomi (masalan \"Claude Code\")" \
+        "    • hodisa turi (install yoki launch)" \
+        "" \
+        "❌ IP, foydalanuvchi nomi, kalit yoki boshqa shaxsiy ma'lumot YO'Q." \
+        "Bu hammaga \"qaysi CLI eng mashhur\"ligini ko'rsatishga yordam beradi." \
+        "" \
+        "O'chirish: aidevix --stats off"
+      ;;
+    off)
+      set_global_stats off
+      log_success "Global statistika o'chirildi. Endi hech narsa yuborilmaydi."
+      ;;
+    ''|status)
+      local state="o'chiq (opt-in)"
+      global_stats_enabled && state="yoqilgan"
+      panel "📊 Global statistika — holat: $state" \
+        "Server:   $AIDEVIX_STATS_URL" \
+        "Yuboriladi (yoqilганда): agent nomi + hodisa turi (shaxsiy ma'lumotsiz)" \
+        "" \
+        "Yoqish:   aidevix --stats on" \
+        "O'chirish: aidevix --stats off"
+      ;;
+    *)
+      die 2 "Noma'lum: 'aidevix --stats $arg'. Foydalanish: aidevix --stats [on|off]"
+      ;;
+  esac
+}
+
+# report_usage_global <nom> <install|launch> — hodisani serverga FONDA yuboradi.
+# Eng-yaxshi-harakat: jim, qisqa timeout, hech qachon bloklamaydi/xato bermaydi.
+report_usage_global() {
+  local name="$1" type="${2:-launch}"
+  global_stats_enabled || return 0
+  [[ -n "${CI:-}" ]] && return 0
+  command -v curl >/dev/null 2>&1 || return 0
+  [[ -n "$name" ]] || return 0
+  # Agent nomidagi " va \ ni JSON uchun ekranlaymiz (config nomlari odatda toza).
+  local esc; esc="$(printf '%s' "$name" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+  # ( ... & ) — fonda detach: exec'dan keyin ham mustaqil tugaydi.
+  ( curl -fsS -m 3 -X POST "$AIDEVIX_STATS_URL/v1/events" \
+      -H 'content-type: application/json' \
+      --data "{\"agent\":\"$esc\",\"type\":\"$type\"}" >/dev/null 2>&1 & ) 2>/dev/null
+  return 0
+}
+
+# fetch_global_stats — /v1/stats keshini FONDA yangilaydi (throttled).
+# Menyu keshni o'qiydi (darrov); bu funksiya keyingi safar uchun yangilaydi.
+fetch_global_stats() {
+  global_stats_enabled || return 0
+  [[ -n "${CI:-}" ]] && return 0
+  command -v curl >/dev/null 2>&1 || return 0
+  local now interval last
+  interval="${AIDEVIX_STATS_TTL:-10800}"
+  now="$(date +%s 2>/dev/null || echo 0)"
+  if [[ -r "$GLOBAL_STAMP" && -r "$GLOBAL_CACHE" ]]; then
+    last="$(cat "$GLOBAL_STAMP" 2>/dev/null || echo 0)"; [[ "$last" =~ ^[0-9]+$ ]] || last=0
+    (( now - last < interval )) && return 0
+  fi
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  ( curl -fsS -m 5 "$AIDEVIX_STATS_URL/v1/stats" -o "$GLOBAL_CACHE.tmp" 2>/dev/null \
+      && mv -f "$GLOBAL_CACHE.tmp" "$GLOBAL_CACHE" 2>/dev/null \
+      && printf '%s\n' "$now" >"$GLOBAL_STAMP" 2>/dev/null \
+      || rm -f "$GLOBAL_CACHE.tmp" 2>/dev/null ) >/dev/null 2>&1 &
+  return 0
+}
+
+# global_install_tsv — kesh JSON'idagi "install" reytingini "nom<TAB>rank<TAB>son"
+# qatorlariga aylantiradi (rank = ro'yxatdagi tartib, server kamayish bo'yicha beradi).
+global_install_tsv() {
+  [[ -r "$GLOBAL_CACHE" ]] || return 0
+  awk '
+    {
+      i = index($0, "\"install\":[")
+      if (i == 0) next
+      rest = substr($0, i + 11)          # "install":[ dan keyingi qism
+      j = index(rest, "]")
+      if (j == 0) next
+      arr = substr(rest, 1, j - 1)
+      n = 0
+      while (match(arr, /"agent":"[^"]*","count":[0-9]+/)) {
+        obj = substr(arr, RSTART, RLENGTH)
+        arr = substr(arr, RSTART + RLENGTH)
+        a = obj; sub(/^"agent":"/, "", a); sub(/","count":[0-9]+$/, "", a)
+        c = obj; sub(/^.*"count":/, "", c)
+        n++
+        printf "%s\t%d\t%d\n", a, n, c
+      }
+    }
+  ' "$GLOBAL_CACHE" 2>/dev/null || true
+}
+
+# maybe_global_hint — global statistika hali sozlanmagan bo'lsa, BIR MARTA
+# yengil eslatma ko'rsatadi (majburlamaydi — opt-in). Faqat interaktiv holatda.
+maybe_global_hint() {
+  [[ -n "${AIDEVIX_GLOBAL_STATS:-}" ]] && return 0   # env orqali boshqarilmoqda
+  global_stats_enabled && return 0                   # allaqachon yoqilgan
+  [[ -e "$GLOBAL_OPTIN_FILE" ]] && return 0          # foydalanuvchi tanlagan (on/off)
+  [[ -e "$GLOBAL_HINT_FILE" ]] && return 0           # eslatma ko'rsatilgan
+  [[ -n "${CI:-}" ]] && return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  : >"$GLOBAL_HINT_FILE" 2>/dev/null || true
+  panel "💡 Maslahat — global statistika (ixtiyoriy)" \
+    "Qaysi AI CLI dunyoda eng mashhurligini menyuda ko'rmoqchimisiz?" \
+    "    aidevix --stats on" \
+    "Yoqsangiz FAQAT agent nomi + hodisa turi yuboriladi (shaxsiy ma'lumotsiz)." \
+    "Standart — o'CHIQ. Hozir hech narsa o'zgarmaydi; bu shunchaki eslatma."
 }
 
 # --- Birinchi ishga tushirishda login/auth yo'riqnomasi --------------------
@@ -439,18 +591,32 @@ preview_agent() {
 
 # --- Menyu qatorlarini qurish (eng ko'p ishlatilgan yuqorida) --------------
 # Chiqish formati: KO'RINISH\tNAME  (NAME — qidirish uchun yashirin maydon).
-# Qatorlar lokal ishlatish sanog'i bo'yicha KAMAYISH tartibida; teng bo'lsa
-# config tartibi saqlanadi. Har agent yonida "· N×" sanoq ko'rsatiladi.
+# Qatorlar LOKAL ishlatish sanog'i bo'yicha KAMAYISH tartibida; teng bo'lsa
+# config tartibi saqlanadi. Har agent yonida "· N×" (lokal) va — global
+# statistika yoqilgan bo'lsa — "🔥 #rank · count" (global) belgisi ko'rinadi.
+#   build_menu <rows> [lokal-stats-fayl] [global-tsv-fayl]
 build_menu() {
-  local rows="$1" statsfile="${2:-}"
+  local rows="$1" statsfile="${2:-}" globalfile="${3:-}"
   [[ -n "$statsfile" && -r "$statsfile" ]] || statsfile=/dev/null
-  awk -F'\t' -v sf="$statsfile" -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
-            -v t="${C_TITLE:-}" -v gy="${C_GRAY:-}" -v b="${C_BOLD:-}" '
+  [[ -n "$globalfile" && -r "$globalfile" ]] || globalfile=/dev/null
+  awk -F'\t' -v sf="$statsfile" -v gf="$globalfile" \
+            -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
+            -v t="${C_TITLE:-}" -v gy="${C_GRAY:-}" -v b="${C_BOLD:-}" -v mg="${C_MAGENTA:-}" '
+    function human(x) {
+      if (x >= 1000000) return sprintf("%.1fM", x / 1000000)
+      if (x >= 1000)    return sprintf("%.1fk", x / 1000)
+      return x ""
+    }
     BEGIN {
-      # Statistika faylidan nom -> son xaritasini quramiz.
+      # Lokal statistika: nom -> son.
       while ((getline line < sf) > 0) {
         m = split(line, a, "\t")
         if (m >= 2) cnt[a[2]] = a[1]
+      }
+      # Global statistika (ixtiyoriy): nom -> rank, son.
+      while ((getline gline < gf) > 0) {
+        m = split(gline, gp, "\t")
+        if (m >= 3) { grank[gp[1]] = gp[2]; gcnt[gp[1]] = gp[3] }
       }
     }
     {
@@ -463,8 +629,9 @@ build_menu() {
       else if (index(auth, "💳")) badge = "💳";
       c = cnt[name] + 0;
       use = (c > 0) ? sprintf("  %s·%d×%s", gy, c, z) : "";
-      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s", icon, b, t, name, z, gy, desc, z, badge, use)
-      # Tartiblash kalitlari: 1) sanoq (kamayish), 2) config indeksi (barqaror).
+      gbadge = (name in grank) ? sprintf("  %s🔥#%d·%s%s", mg, grank[name], human(gcnt[name] + 0), z) : "";
+      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s%s", icon, b, t, name, z, gy, desc, z, badge, use, gbadge)
+      # Tartiblash kalitlari: 1) lokal sanoq (kamayish), 2) config indeksi (barqaror).
       printf "%010d\t%06d\t%s\t%s\n", c, (++idx), disp, name
     }
   ' <<<"$rows" | sort -t"$(printf '\t')" -k1,1nr -k2,2n | cut -f3-
@@ -567,7 +734,17 @@ run_menu() {
       ;;
   esac
 
-  local menu; menu="$(build_menu "$rows" "$STATS_FILE")"
+  # Global statistika (opt-in): keshni fonda yangilab qo'yamiz (keyingi safar
+  # uchun) va joriy keshdan reytingni menyuga qo'shamiz. Bir martalik eslatma.
+  maybe_global_hint
+  fetch_global_stats
+  local globalfile=""
+  if global_stats_enabled; then
+    globalfile="$(mktemp)"; TMPFILES+=("$globalfile")
+    global_install_tsv >"$globalfile" 2>/dev/null || true
+  fi
+
+  local menu; menu="$(build_menu "$rows" "$STATS_FILE" "$globalfile")"
 
   local name
   if command -v fzf >/dev/null 2>&1; then
@@ -597,9 +774,10 @@ launch_selected() {
   save_last "$name"
   ensure_installed "$name" "$binary" "$install"
   maybe_show_auth_note "$name" "$auth" "$url"
-  # Lokal statistika: faqat haqiqatan ishga tushganda (o'rnatish muvaffaqiyatli,
-  # bekor qilinmagan) sanoqni oshiramiz.
+  # Statistika: faqat haqiqatan ishga tushganda (o'rnatish muvaffaqiyatli,
+  # bekor qilinmagan). Lokal — har doim; global — faqat opt-in yoqilgan bo'lsa.
   record_usage "$name"
+  report_usage_global "$name" "launch"
   launch_agent "$name" "$binary" "$command"
 }
 
@@ -737,6 +915,7 @@ ensure_installed() {
     die 127 "'$binary' hali PATH'da ko'rinmayapti — terminalni qayta oching."
   fi
   log_success "O'rnatildi: $name"
+  report_usage_global "$name" "install"
 }
 
 # --- Agentni ishga tushirish ----------------------------------------------
@@ -817,6 +996,18 @@ doctor() {
     else
       printf '  %b✗%b PATH da YO''Q: %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$HOME/.local/bin"
     fi
+  fi
+
+  printf '\n%sGlobal statistika:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  if global_stats_enabled; then
+    printf '  %b✓%b yoqilgan — server: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$AIDEVIX_STATS_URL"
+    if [[ -r "$GLOBAL_CACHE" ]]; then
+      printf '  %b✓%b kesh mavjud: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$GLOBAL_CACHE"
+    else
+      printf '  %b!%b kesh hali yo'\''q (keyingi menyuda yangilanadi)\n' "${C_YELLOW:-}" "${C_RESET:-}"
+    fi
+  else
+    printf '  %b•%b o'\''chiq (opt-in). Yoqish: aidevix --stats on\n' "${C_GRAY:-}" "${C_RESET:-}"
   fi
 
   printf '\n%sAgentlar holati:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
@@ -946,8 +1137,8 @@ main() {
 
   # Avtomatik yangilanish — tez/meta buyruqlar uchun o'tkazib yuboramiz.
   case "${1:-}" in
-    -h|--help|-v|--version) : ;;
-    *)                      auto_update "$@" ;;
+    -h|--help|-v|--version|-s|--stats) : ;;
+    *)                                 auto_update "$@" ;;
   esac
 
   case "${1:-}" in
@@ -957,6 +1148,7 @@ main() {
     -u|--update)   update_agents ;;
     -d|--doctor)   doctor ;;
     -a|--add)      add_agent ;;
+    -s|--stats)    stats_cmd "${2:-}" ;;
     -f|--free)     run_menu free ;;
     -t|--top)      run_menu top ;;
     "")            run_menu ;;
