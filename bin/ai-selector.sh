@@ -55,6 +55,10 @@ STATE_FILE="$STATE_DIR/last"
 STATS_FILE="$STATE_DIR/usage"
 # Login/auth eslatmasi qaysi agentlar uchun allaqachon ko'rsatilganini saqlaydi.
 SEEN_AUTH_FILE="$STATE_DIR/seen_auth"
+# "Aidevix nima/nima emas" tanishtiruvi BIR MARTA ko'rsatilganini belgilaydi.
+INTRO_FILE="$STATE_DIR/seen_intro"
+# Foydalanuvchi tanlagan interfeys tili ("uz"/"en") — ilk ishga tushishda so'raladi.
+LANG_FILE="$STATE_DIR/lang"
 
 # --- Global statistika (OPT-IN — standart o'CHIQ) -------------------------
 # Foydalanuvchi YOQSAGINA (aidevix --stats on) ishlaydi. Yoqilganda: agent
@@ -91,6 +95,7 @@ source "$LIB"
 # Vaqtinchalik fayllarni tozalash + kursorni tiklash.
 TMPFILES=()
 cleanup() {
+  ui_spin_stop 2>/dev/null || true
   show_cursor
   local f
   for f in ${TMPFILES[@]+"${TMPFILES[@]}"}; do rm -f "$f" 2>/dev/null || true; done
@@ -103,6 +108,10 @@ usage() {
   if [[ "${AIDEVIX_LANG_RESOLVED:-uz}" == "en" ]]; then
     cat <<'EOF'
 Aidevix CLI — manage your terminal AI CLI agents from a single menu.
+
+NOTE: Aidevix is only a launcher — it installs and opens third-party AI CLIs.
+It does NOT answer your prompts and does NOT provide any API key/token. Some
+listed CLIs are paid, some are free/free-tier (see 🆓/🔑/💳 badges).
 
 USAGE:
   aidevix [OPTION | AGENT]
@@ -121,6 +130,8 @@ OPTIONS:
                   Global stats (opt-in): show status, or turn on/off.
                   When on, the menu shows "🔥 #rank". Only the agent name +
                   event type are sent (no personal data). Default: off.
+  -L, --lang [en|uz]
+                  Choose the interface language (asked on first run), or set it
   -v, --version   Show the Aidevix CLI version
   -h, --help      Show this help text
 
@@ -136,6 +147,10 @@ EOF
   else
     cat <<'EOF'
 Aidevix CLI — terminaldagi AI CLI agentlarini bitta menyudan boshqaring.
+
+ESLATMA: Aidevix faqat ishga tushirgich — uchinchi-tomon AI CLI'larni o'rnatib,
+ochib beradi. U savollarga JAVOB BERMAYDI va API kalit/token BERMAYDI. Ro'yxatdagi
+ba'zi CLI'lar pullik, ba'zilari bepul/bepul tier (🆓/🔑/💳 belgilariga qarang).
 
 FOYDALANISH:
   aidevix [TANLOV | AGENT]
@@ -154,6 +169,8 @@ TANLOVLAR:
                   Global statistika (opt-in): holatni ko'rsatadi yoki yoqadi/o'chiradi.
                   Yoqilganda menyuda "🔥 #reyting" ko'rinadi. Faqat agent nomi +
                   hodisa turi yuboriladi (shaxsiy ma'lumotsiz). Standart — o'chiq.
+  -L, --lang [en|uz]
+                  Interfeys tilini tanlash (ilk ishga tushishda so'raladi) yoki o'rnatish
   -v, --version   Aidevix CLI versiyasini ko'rsatadi
   -h, --help      Ushbu yordam matnini ko'rsatadi
 
@@ -399,6 +416,86 @@ maybe_global_hint() {
     "$(t 'Standart — o'\''CHIQ. Hozir hech narsa o'\''zgarmaydi; bu shunchaki eslatma.')"
 }
 
+# --- Til tanlash (i18n) ---------------------------------------------------
+# load_saved_lang — saqlangan til tanlovini qo'llaydi (AIDEVIX_LANG env ustun).
+load_saved_lang() {
+  [[ -n "${AIDEVIX_LANG:-}" ]] && return 0
+  [[ -r "$LANG_FILE" ]] || return 0
+  aidevix_set_lang "$(cat "$LANG_FILE" 2>/dev/null || true)" 2>/dev/null || true
+}
+
+# choose_language — ILK interaktiv ishga tushishda tilni so'raydi (English/O'zbek),
+# tanlovni saqlaydi va darrov qo'llaydi. Til hali tanlanmaganда ikki tilda so'raladi.
+# AIDEVIX_LANG env, CI yoki TTY yo'q bo'lsa — so'ramaydi.
+choose_language() {
+  [[ -n "${AIDEVIX_LANG:-}" ]] && return 0
+  [[ -n "${CI:-}" ]] && return 0
+  [[ -r "$LANG_FILE" ]] && return 0
+  { : >/dev/tty; } 2>/dev/null || return 0
+
+  local B="${C_BOLD:-}" T="${C_TITLE:-}" R="${C_RESET:-}" Gy="${C_GRAY:-}"
+  {
+    printf '\n  %s%s🌐  Til tanlang  /  Choose your language%s\n\n' "$B" "$T" "$R"
+    printf '     %s[1]%s English\n'   "$B" "$R"
+    printf '     %s[2]%s Oʻzbekcha\n\n' "$B" "$R"
+    printf '  %sEnter = avto / auto%s\n' "$Gy" "$R"
+  } >/dev/tty
+  local ans=""
+  trap - ERR
+  printf '  %s[1/2]%s › ' "$B" "$R" >/dev/tty
+  IFS= read -r ans </dev/tty || ans=""
+  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+
+  local chosen=""
+  case "$ans" in
+    1|en|EN|english|English)        chosen=en ;;
+    2|uz|UZ|uzbek|oʻzbekcha|ozbek)  chosen=uz ;;
+    *)                              chosen="${AIDEVIX_LANG_RESOLVED:-uz}" ;;  # Enter → aniqlangan
+  esac
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  printf '%s\n' "$chosen" >"$LANG_FILE" 2>/dev/null || true
+  aidevix_set_lang "$chosen" 2>/dev/null || true
+}
+
+# lang_cmd [en|uz] — `aidevix --lang`: tilni o'rnatadi yoki qayta tanlatadi.
+lang_cmd() {
+  local arg="${1:-}"
+  case "$arg" in
+    en|uz)
+      mkdir -p "$STATE_DIR" 2>/dev/null || true
+      printf '%s\n' "$arg" >"$LANG_FILE" 2>/dev/null || true
+      aidevix_set_lang "$arg" 2>/dev/null || true
+      log_success "$(t 'Til o'\''rnatildi: %s' "$arg")"
+      ;;
+    ''|choose|select)
+      rm -f "$LANG_FILE" 2>/dev/null || true
+      choose_language
+      log_success "$(t 'Til o'\''rnatildi: %s' "${AIDEVIX_LANG_RESOLVED:-uz}")"
+      ;;
+    *)
+      die 2 "$(t "Noma'lum: 'aidevix --lang %s'. Foydalanish: aidevix --lang [en|uz]" "$arg")"
+      ;;
+  esac
+}
+
+# maybe_show_intro — Aidevix nima EKANLIGINI (va nima EMASligini) BIR MARTA
+# tushuntiradi. Ko'pchilik menyudagi CLI'larni "bepul" yoki "aidevix javob
+# beradi" deb o'ylaydi — bu chalkashlikni oldindan oldini olamiz.
+maybe_show_intro() {
+  [[ -n "${CI:-}" ]] && return 0
+  [[ -e "$INTRO_FILE" ]] && return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  : >"$INTRO_FILE" 2>/dev/null || true
+  panel "$(t 'ℹ️  Aidevix nima — va nima EMAS')" \
+    "$(t 'Aidevix — faqat ishga tushirgich (launcher): AI CLI'\''larni siz uchun')" \
+    "$(t 'o'\''rnatib, ochib beradi — xolos.')" \
+    "" \
+    "$(t '• CLI'\''larning O'\''ZI uchinchi tomon dasturlar (Anthropic, Google, OpenAI, ...).')" \
+    "$(t '• Ba'\''zilari PULLIK, ba'\''zilari bepul yoki bepul tier — menyuda 🆓 / 🔑 / 💳 belgisi.')" \
+    "$(t '• Aidevix savollarga JAVOB BERMAYDI va token/kalit BERMAYDI.')" \
+    "$(t '  API kalitni o'\''zingiz tegishli xizmatdan olasiz; Aidevix uni ko'\''rmaydi.')"
+}
+
 # --- Birinchi ishga tushirishda login/auth yo'riqnomasi --------------------
 # Agent AUTH maydoniga ega bo'lsa va u ilk bor ishga tushirilayotgan bo'lsa,
 # foydalanuvchiga login/API kalit kerakligini SODDA tilda bir marta aytamiz.
@@ -548,6 +645,12 @@ parse_agents() {
       log_warn "$(t "Noto'g'ri qator o'tkazib yuborildi (#%s): %s" "$lineno" "$line")"
       continue
     fi
+    # Agent izohi (desc) va login izohi (auth) — tanlangan tilga tarjima qilamiz
+    # (en bo'lsa). Shunda menyu/preview/--list TO'LIQ bir tilda chiqadi (uz manba
+    # — kalit). Emoji belgilari (🆓/🌐/🔑/💳) tarjimada ham saqlanadi — filtr/badge
+    # ularga tayanadi.
+    [[ -n "$desc" ]] && desc="$(t "$desc")"
+    [[ -n "$auth" ]] && auth="$(t "$auth")"
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$desc" "$binary" "$command" "$install" "$category" "$auth" "$url"
     found=1
   done <"$config"
@@ -688,28 +791,44 @@ build_menu() {
 # --- fzf orqali tanlash ---------------------------------------------------
 select_with_fzf() {
   local menu="$1" datafile="$2" selection rc
-  selection="$(
-    printf '%s\n' "$menu" \
-      | fzf --ansi \
-            --delimiter='\t' \
-            --with-nth=1 \
-            --prompt="$(t '  qidirish › ')" \
-            --pointer='▶' \
-            --marker='✓' \
-            --height=~90% \
-            --layout=reverse \
-            --border=rounded \
-            --border-label=' ✦ Aidevix CLI ' \
-            --border-label-pos=3 \
-            --margin=1,2 \
-            --padding=1 \
-            --info=inline \
-            --color='fg:-1,bg:-1,hl:51,fg+:231,bg+:236,hl+:87,info:245,prompt:213,pointer:213,marker:84,header:245,border:60,label:87' \
-            --header="$(t '↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor')" \
-            --preview "bash \"$SELF\" __preview {2} \"$datafile\"" \
-            --preview-window='right,52%,wrap,border-left' \
-            --preview-label=' tafsilot '
-  )" || {
+  local -a fzf_args=(
+    --ansi
+    --delimiter='\t'
+    --with-nth=1
+    --prompt="$(t '  qidirish › ')"
+    --pointer='▶'
+    --marker='✓'
+    --height=~90%
+    --layout=reverse
+    --border=rounded
+    --border-label=' ✦ Aidevix CLI '
+    --border-label-pos=3
+    --margin=1,2
+    --padding=1
+    --info=inline
+    --color='fg:-1,bg:-1,hl:51,fg+:231,bg+:236,hl+:87,info:245,prompt:213,pointer:213,marker:84,header:245,border:60,label:87'
+    --header="$(t '↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor')"
+  )
+
+  # Preview har siljishda `bash` qism-jarayonini ochadi. Windows (Git Bash /
+  # MSYS / Cygwin)da bu ko'pincha cygwin fork (child_copy / cygheap) xatolarini
+  # keltirib chiqaradi va menyuni xato xabarlari bilan to'ldiradi. Shuning uchun
+  # Windows'da preview STANDART O'CHIQ. Yoqish: AIDEVIX_FZF_PREVIEW=1.
+  local want_preview=1
+  case "$(uname -s 2>/dev/null || echo unknown)" in
+    MINGW*|MSYS*|CYGWIN*) want_preview=0 ;;
+  esac
+  [[ -n "${AIDEVIX_FZF_PREVIEW:-}" ]] && want_preview=1
+  [[ -n "${AIDEVIX_NO_PREVIEW:-}" ]]  && want_preview=0
+  if [[ "$want_preview" -eq 1 ]]; then
+    fzf_args+=(
+      --preview "bash \"$SELF\" __preview {2} \"$datafile\""
+      --preview-window='right,52%,wrap,border-left'
+      --preview-label=' tafsilot '
+    )
+  fi
+
+  selection="$(printf '%s\n' "$menu" | fzf "${fzf_args[@]}")" || {
     rc=$?
     if [[ "$rc" -eq 130 ]]; then log_info "$(t 'Bekor qilindi.')"; exit 0; fi
     die "$rc" "$(t 'fzf kutilmagan kod bilan to'\''xtadi: %s' "$rc")"
@@ -760,14 +879,23 @@ select_with_numbers() {
 # --- Interaktiv menyu -----------------------------------------------------
 run_menu() {
   local filter="${1:-}"
+
+  # Ilk ishga tushishda tilni so'raymiz (keyin saqlangan tildan foydalanamiz).
+  choose_language
+
   case "$filter" in
     free) banner "Aidevix CLI" "$(t '🆓 bepul agentlar — login/kalitsiz yoki bepul tier')" ;;
     top)  banner "Aidevix CLI" "$(t '⭐ eng mashhur agentlar — vibecoding uchun')" ;;
     *)    banner ;;
   esac
 
+  # Aidevix nima/nima emasligini ilk safar tushuntiramiz (chalkashlikка qarshi).
+  maybe_show_intro
+
   local config; config="$(resolve_config)"
+  ui_spin_start "$(t 'Agentlar tekshirilmoqda…')"
   local rows; rows="$(build_rows "$config")"
+  ui_spin_stop
 
   # --free / --top filtrlari (agar so'ralgan bo'lsa).
   case "$filter" in
@@ -792,7 +920,9 @@ run_menu() {
     global_install_tsv >"$globalfile" 2>/dev/null || true
   fi
 
+  ui_spin_start "$(t 'Menyu tayyorlanmoqda…')"
   local menu; menu="$(build_menu "$rows" "$STATS_FILE" "$globalfile")"
+  ui_spin_stop
 
   local name
   if command -v fzf >/dev/null 2>&1; then
@@ -1252,6 +1382,9 @@ maybe_npm_update_hint() {
 
 # --- Argumentlar ----------------------------------------------------------
 main() {
+  # Saqlangan til — preview qism-jarayonida ham to'g'ri til ishlashi uchun ENG OLDIN.
+  load_saved_lang
+
   # Preview qism-jarayoni — augment va boshqa og'ir ishlardan oldin.
   if [[ "${1:-}" == "__preview" ]]; then
     preview_agent "${2:-}" "${3:-}"
@@ -1262,8 +1395,8 @@ main() {
 
   # Avtomatik yangilanish — tez/meta buyruqlar uchun o'tkazib yuboramiz.
   case "${1:-}" in
-    -h|--help|-v|--version|-s|--stats) : ;;
-    *)                                 auto_update "$@"; maybe_npm_update_hint ;;
+    -h|--help|-v|--version|-s|--stats|--lang|-L) : ;;
+    *)                                           auto_update "$@"; maybe_npm_update_hint ;;
   esac
 
   case "${1:-}" in
@@ -1274,6 +1407,7 @@ main() {
     -d|--doctor)   doctor ;;
     -a|--add)      add_agent ;;
     -s|--stats)    stats_cmd "${2:-}" ;;
+    -L|--lang)     lang_cmd "${2:-}" ;;
     -f|--free)     run_menu free ;;
     -t|--top)      run_menu top ;;
     "")            run_menu ;;

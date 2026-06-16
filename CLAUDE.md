@@ -44,6 +44,7 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 - `parse_agents` — config → TAB-ajratilgan qatorlar (8 maydon). `build_rows` — unga `status` (✓/✗) qo'shadi.
 - `run_menu` (filter: `free`/`top`), `select_with_fzf`, `select_with_numbers`, `build_menu`, `preview_agent`.
 - `quick_launch` (nomdan agent topish) → `launch_selected` → `ensure_installed` → `maybe_show_auth_note` → `launch_agent` (`exec`).
+- **Til (i18n) UX:** `load_saved_lang` (main'da, preview'dan oldin), `choose_language` (ilk run picker, `LANG_FILE`), `lang_cmd` (`--lang [en|uz]`), `aidevix_set_lang` (i18n.sh). Agent `desc`/`auth` `parse_agents`'da `t()` bilan tarjima qilinadi → menyu/preview/--list to'liq bir tilda. `maybe_show_intro` (BIR MARTA "Aidevix nima/emas" paneli). `ui_spin_start/stop` (common.sh) — menyu tayyorlanayotgandagi fon loaderi. `bin/postinstall.js` — npm'dan keyin "aidevix yozing" yo'riqnomasi.
 - `ensure_installed` — yo'q bo'lsa ruxsat so'rab o'rnatadi; OS-qo'llab-quvvatlamaslik / xato uchun aniq `panel` xabarlari.
 - `should_open_login_link` — 🔑 kalit kerak VA muhitda yo'q bo'lsagina login sahifa ochadi.
 - `doctor`, `update_agents`, `add_agent`, `auto_update` (git `fetch`+`reset --hard`, throttled).
@@ -63,7 +64,8 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | O'zgaruvchi | Ta'siri |
 |-------------|---------|
 | `AI_PULT_CONFIG` | Aniq config yo'li (test/maxsus). Berilsa — faqat o'sha. |
-| `AIDEVIX_LANG` | Interfeys tili: `uz` yoki `en`. Berilmasa `LANG`/`LC_*` locale'idan aniqlanadi (uz*/C/bo'sh → uz; en*/boshqa → en). |
+| `AIDEVIX_LANG` | Interfeys tili: `uz` yoki `en`. Berilmasa saqlangan tanlov (`--lang`), so'ng `LANG`/`LC_*` locale'idan aniqlanadi; ilk ishga tushishda interaktiv so'raladi. |
+| `AIDEVIX_FZF_PREVIEW` | `1` — fzf preview'ni majburan yoqadi (Windows/MSYS'da std o'chiq, cygwin fork xatosi uchun). |
 | `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanish (git) **va** npm yangilanish eslatmasini o'chiradi. |
 | `AIDEVIX_UPDATE_INTERVAL` | Tekshirish oralig'i (sekund, std 10800). |
 | `CI=1` | Animatsiya + auto_update **+ global statistika** o'chiq. |

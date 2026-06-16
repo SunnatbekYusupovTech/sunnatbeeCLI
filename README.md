@@ -53,6 +53,12 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 > o'rnatadi va istalgan AI CLI'dan darrov foydalana boshlaydi — qaysi paket
 > qaysi buyruq bilan o'rnatilishini eslab o'tirish shart emas.
 
+> ⚠️ **Aidevix nima — va nima EMAS.** Aidevix faqat **ishga tushirgich (launcher)**:
+> AI CLI'larni o'rnatib, ochib beradi — xolos. CLI'larning **o'zi** uchinchi tomon
+> dasturlar (Anthropic, Google, OpenAI…). **Ba'zilari pullik, ba'zilari bepul/bepul
+> tier** (menyuda 🆓/🔑/💳 belgilari). Aidevix **savollarga javob bermaydi** va
+> **API kalit/token bermaydi** — kalitni o'zingiz tegishli xizmatdan olasiz.
+
 ---
 
 ## ✨ Imkoniyatlar (Features)
@@ -459,22 +465,26 @@ Saqlang — keyingi `aidevix` ishga tushishida agent menyuda paydo bo'ladi. 🎉
 
 ## 🌐 Til (o'zbekcha / inglizcha)
 
-Aidevix **o'zbekcha** (standart) va **inglizcha** ishlaydi. Interfeys tili
-`LANG`/locale'dan avtomatik aniqlanadi:
+Aidevix **o'zbekcha** va **inglizcha** to'liq ishlaydi (menyu, izohlar, login
+eslatmalari — hammasi bir tilda). **Ilk marta `aidevix` ishga tushganda til
+so'raladi:**
 
-- `uz*`, `C`/`POSIX` yoki bo'sh → **o'zbekcha**
-- `en*` (masalan `en_US.UTF-8`) yoki boshqa har qanday locale → **inglizcha**
-
-Tilni xohlagan vaqtda majburlash mumkin:
-
-```bash
-export AIDEVIX_LANG=en   # inglizcha
-export AIDEVIX_LANG=uz   # o'zbekcha
-aidevix --help
+```text
+  🌐  Til tanlang  /  Choose your language
+     [1] English
+     [2] Oʻzbekcha
 ```
 
-> Agent **izohlari** `config/agents.conf` dan keladi va hozircha tildan qat'i
-> nazar o'zbekcha — faqat ilovaning o'z interfeysi tarjima qilinadi.
+Tanlov saqlanadi va keyingi safar so'ralmaydi. Istalgan vaqtda o'zgartirish:
+
+```bash
+aidevix --lang          # qayta tanlash (interaktiv)
+aidevix --lang en       # inglizcha
+aidevix --lang uz       # o'zbekcha
+export AIDEVIX_LANG=en  # yoki muhit o'zgaruvchisi bilan
+```
+
+Til berilmasa `LANG`/locale'dan aniqlanadi (`en*`/boshqa → en; `uz*`/`C`/bo'sh → uz).
 
 ---
 

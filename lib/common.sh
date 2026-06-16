@@ -376,3 +376,39 @@ loader_3d() {
 ui_launch() {
   loader_3d "$(t '🚀 Ishga tushirilmoqda')" "${1:-}"
 }
+
+# --- Fonda aylanuvchi yuklash ko'rsatkichi (menyu tayyorlanayotganda) -------
+# ui_spin_start <xabar> — FONDA spinner boshlaydi; og'ir ish (build_rows/menu)
+# bajarilayotganda terminal "muzlab qolgandek" tuyulmasligi uchun. Animatsiya
+# o'chiq bo'lsa (TTY yo'q / CI / NO_COLOR / AI_NO_ANIM) — bir martalik oddiy qator.
+# ui_spin_stop bilan to'xtatiladi (qatorni tozalaydi).
+UI_SPIN_PID=""
+ui_spin_start() {
+  local msg="${1:-}"
+  if [[ "${AI_ANIM:-0}" -ne 1 ]]; then
+    printf '  %s▸%s %s ...\n' "${C_CYAN}" "${C_RESET}" "$msg" >&2
+    return 0
+  fi
+  local frames
+  if [[ "${UI_UTF8:-1}" -eq 1 ]]; then frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'; else frames='|/-\'; fi
+  printf '\033[?25l' >&2                         # kursorni yashir
+  (
+    trap 'exit 0' TERM
+    trap - ERR EXIT                              # ota-trapni meros qilmaymiz
+    local i=0 n=${#frames}
+    while :; do
+      printf '\r %s%s%s %s%s%s\033[K' \
+        "${C_CYAN}" "${frames:$((i % n)):1}" "${C_RESET}" \
+        "${C_GRAY}" "$msg" "${C_RESET}" >&2
+      i=$((i + 1)); sleep 0.08
+    done
+  ) &
+  UI_SPIN_PID=$!
+}
+ui_spin_stop() {
+  [[ -n "${UI_SPIN_PID:-}" ]] || return 0
+  kill "$UI_SPIN_PID" 2>/dev/null || true
+  wait "$UI_SPIN_PID" 2>/dev/null || true
+  UI_SPIN_PID=""
+  printf '\r\033[K\033[?25h' >&2                 # qatorni tozala + kursorni qaytar
+}

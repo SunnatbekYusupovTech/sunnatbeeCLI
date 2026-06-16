@@ -43,6 +43,22 @@ if [[ "$AIDEVIX_LANG_RESOLVED" == "en" ]]; then
   unset __i18n_dir
 fi
 
+# aidevix_set_lang <uz|en> — tilni MAJBURAN o'rnatadi (picker yoki saqlangan
+# tanlovdan keyin). Kerak bo'lsa inglizcha katalogni yuklaydi.
+aidevix_set_lang() {
+  case "$1" in
+    en) AIDEVIX_LANG_RESOLVED=en ;;
+    uz) AIDEVIX_LANG_RESOLVED=uz ;;
+    *)  return 1 ;;
+  esac
+  if [[ "$AIDEVIX_LANG_RESOLVED" == "en" && "${#MSG_EN[@]}" -eq 0 ]]; then
+    local d; d="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+    # shellcheck source=i18n/en.sh
+    [[ -r "$d/i18n/en.sh" ]] && source "$d/i18n/en.sh"
+  fi
+  return 0
+}
+
 # t <uz-manba> [printf-arg...]
 #   O'zbekcha manbani KALIT sifatida ishlatib, joriy tildagi matnni QAYTARADI
 #   (chop etmaydi — odatdagi printf/log oqimiga mos). Argument berilsa, matn

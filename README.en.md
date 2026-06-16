@@ -50,6 +50,12 @@ interactive menu. Works in `bash`, `zsh`, `cmd` and `PowerShell`.
 > using any AI CLI right away — no need to memorize which package installs with
 > which command.
 
+> ⚠️ **What Aidevix is — and is NOT.** Aidevix is only a **launcher**: it installs
+> and opens AI CLIs for you — that's all. The CLIs **themselves** are third-party
+> tools (Anthropic, Google, OpenAI…). **Some are paid, some free/free-tier** (see
+> the 🆓/🔑/💳 badges). Aidevix does **not answer your prompts** and does **not
+> provide any API key/token** — you get the key yourself from the relevant service.
+
 ---
 
 ## ✨ Features
@@ -328,22 +334,25 @@ NAME | BINARY | COMMAND | INSTALL | DESCRIPTION | CATEGORY | AUTH | URL
 
 ## 🌐 Language (English / Uzbek)
 
-Aidevix speaks both **Uzbek** (default) and **English**. The interface language is
-detected automatically from your `LANG`/locale:
+Aidevix is fully bilingual — **English** and **Uzbek** (menu, descriptions, login
+notes — all in one language). **On the first run, `aidevix` asks you to pick:**
 
-- `en*` (e.g. `en_US.UTF-8`) or any non-Uzbek locale → **English**
-- `uz*`, `C`/`POSIX`, or unset → **Uzbek**
-
-Force a language explicitly at any time:
-
-```bash
-export AIDEVIX_LANG=en   # English
-export AIDEVIX_LANG=uz   # Uzbek
-aidevix --help
+```text
+  🌐  Til tanlang  /  Choose your language
+     [1] English
+     [2] Oʻzbekcha
 ```
 
-> Agent **descriptions** come from `config/agents.conf` and are currently Uzbek
-> regardless of language — only the app's own interface is translated.
+Your choice is saved and not asked again. Change it any time:
+
+```bash
+aidevix --lang          # re-pick (interactive)
+aidevix --lang en       # English
+aidevix --lang uz       # Uzbek
+export AIDEVIX_LANG=en  # or via environment variable
+```
+
+If unset, the language is detected from `LANG`/locale (`en*`/other → en; `uz*`/`C`/unset → uz).
 
 ---
 

@@ -97,3 +97,43 @@ setup() {
   done
   [ "$empty" -eq 0 ]
 }
+
+# --- EN katalog: izoh/auth tarjimalari ------------------------------------
+@test "EN katalog: agent izohi (desc) tarjimasi bor" {
+  AIDEVIX_LANG=en load_selector
+  run t "🧠 Anthropic'ning rasmiy Claude kod agenti"
+  [ "$output" = "🧠 Anthropic's official Claude coding agent" ]
+}
+
+@test "EN katalog: login izohi (auth) tarjimasi bor" {
+  AIDEVIX_LANG=en load_selector
+  run t "🔑 ANTHROPIC_API_KEY yoki 💳 Claude Pro/Max"
+  [ "$output" = "🔑 ANTHROPIC_API_KEY or 💳 Claude Pro/Max" ]
+}
+
+@test "build_rows: EN rejimda agent izohlari tarjima qilinadi" {
+  AIDEVIX_LANG=en load_selector
+  run build_rows "$REPO_CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Anthropic's official Claude coding agent"* ]]
+}
+
+@test "build_rows: UZ rejimda izohlar o'zbekcha qoladi" {
+  run build_rows "$REPO_CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Anthropic'ning rasmiy Claude kod agenti"* ]]
+}
+
+# --- --lang (qora-quti) ---------------------------------------------------
+@test "--lang en: LANG_FILE'ga yozadi" {
+  AIDEVIX_LANG="" run bash "$SELECTOR" --lang en
+  [ "$status" -eq 0 ]
+  [ "$(cat "$LANG_FILE")" = "en" ]
+}
+
+@test "--lang: saqlangan til keyingi ishga tushishga ta'sir qiladi" {
+  AIDEVIX_LANG="" run bash "$SELECTOR" --lang en
+  AIDEVIX_LANG="" run bash "$SELECTOR" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"USAGE:"* ]]
+}

@@ -7,6 +7,34 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+## [1.4.0] — 2026-06-16
+
+### Qo'shildi
+- **🌐 Ilk ishga tushishda til tanlash** — `aidevix` birinchi marta ishga tushganda
+  ikki tilda "English / Oʻzbekcha" so'raydi; tanlov saqlanadi (`~/.local/state/ai-cli/lang`)
+  va keyingi safar so'ralmaydi. `aidevix --lang [en|uz]` bilan istalgan vaqtda
+  o'zgartirish/qayta tanlash mumkin. `choose_language`, `lang_cmd`, `load_saved_lang`,
+  `aidevix_set_lang`.
+- **🈯 To'liq bir tilli interfeys** — agent **izohlari (desc)** va **login izohlari
+  (auth)** ham tanlangan tilga tarjima qilinadi (`parse_agents`'da `t()`), shu tufayli
+  menyu/preview/`--list` endi aralash emas, to'liq inglizcha yoki o'zbekcha chiqadi.
+  EN katalogga 28 agent izohi + 23 auth qatori qo'shildi.
+- **⏳ Ishga tushirish loaderi** — menyu tayyorlanayotganda (agentlar tekshiruvi +
+  menyu qurish) fonda aylanuvchi yuklash ko'rsatkichi chiqadi, terminal "muzlab
+  qolgandek" tuyulmaydi. `ui_spin_start`/`ui_spin_stop` (`lib/common.sh`).
+- **ℹ️ "Aidevix nima — va nima EMAS" tanishtiruvi** — ilk ishga tushishda BIR MARTA:
+  Aidevix faqat launcher (uchinchi-tomon CLI'larni o'rnatib/ochib beradi), savollarga
+  javob bermaydi va token/kalit bermaydi; ba'zi CLI'lar pullik, ba'zilari bepul.
+  `--help` va README'da ham aniq eslatma.
+- **📦 npm `postinstall` yo'riqnomasi** — `npm i -g aidevix` dan keyin ikki tilli
+  qisqa xabar chiqadi: "ishga tushirish uchun `aidevix` deb yozing" (`bin/postinstall.js`).
+
+### Tuzatildi
+- **Windows fzf fork xatosi** — fzf preview har siljishda `bash` qism-jarayonini
+  ochib, Git Bash/MSYS'da `cygheap`/`child_copy` (Win32 error 299) xatolarini
+  keltirardi. Endi Windows'da preview standart **o'chiq** (`AIDEVIX_FZF_PREVIEW=1`
+  bilan yoqiladi); menyu toza ko'rinadi.
+
 ## [1.3.0] — 2026-06-16
 
 ### Qo'shildi
