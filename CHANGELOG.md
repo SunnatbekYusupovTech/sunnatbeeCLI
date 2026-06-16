@@ -7,6 +7,15 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+## [1.4.1] — 2026-06-16
+
+### O'zgardi
+- **🔁 npm yangilanish eslatmasi agressivroq** — npm paketlari o'zini avtomatik
+  yangilamagani uchun (ko'pchilik npm orqali o'rnatadi), yangi versiya bo'lsa
+  eslatma endi **har ishga tushganda** ko'rsatiladi (ilgari versiya uchun bir
+  marta edi) — foydalanuvchi yangilaguncha. Buyruq ishonchliroq `npm i -g
+  aidevix@latest` ga o'zgartirildi. O'chirish: `AIDEVIX_NO_AUTOUPDATE=1`.
+
 ## [1.4.0] — 2026-06-16
 
 ### Qo'shildi

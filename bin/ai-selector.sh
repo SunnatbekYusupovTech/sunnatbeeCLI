@@ -78,7 +78,6 @@ GLOBAL_HINT_FILE="$STATE_DIR/global_stats_hint"      # bir martalik eslatma ko'r
 NPM_PKG="aidevix"                                    # npm registry'dagi paket nomi
 NPM_LATEST_CACHE="$STATE_DIR/npm_latest"             # eng so'nggi versiya keshi
 NPM_CHECK_STAMP="$STATE_DIR/npm_check"               # tekshirishni throttle vaqti
-NPM_NOTIFIED_FILE="$STATE_DIR/npm_notified"          # eslatilgan oxirgi versiya (takror eslatmaslik)
 
 # Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
 DEFAULT_CATEGORY="AI"
@@ -1357,9 +1356,11 @@ fetch_npm_latest() {
   return 0
 }
 
-# maybe_npm_update_hint — npm o'rnatishda yangi versiya bo'lsa, BIR MARTA (har
-# yangi versiya uchun) yangilash buyrug'ini eslatadi. Jim, majburlamaydi.
-# O'chirish: AIDEVIX_NO_AUTOUPDATE=1 (yoki CI).
+# maybe_npm_update_hint — npm o'rnatishda yangi versiya bo'lsa, yangilash
+# buyrug'ini eslatadi. npm paketlari O'ZINI avtomatik yangilamaydi, shuning uchun
+# bu — asosiy tarqalish vositasi: yangi versiya bo'lsa HAR ISHGA TUSHGANDA
+# ko'rsatamiz (standart update-notifier xulqi), foydalanuvchi yangilaguncha.
+# Majburlamaydi. O'chirish: AIDEVIX_NO_AUTOUPDATE=1 (yoki CI).
 maybe_npm_update_hint() {
   [[ -n "${AIDEVIX_NO_AUTOUPDATE:-}" || -n "${CI:-}" ]] && return 0
   is_npm_install || return 0
@@ -1368,15 +1369,9 @@ maybe_npm_update_hint() {
   local latest; latest="$(cat "$NPM_LATEST_CACHE" 2>/dev/null || true)"
   [[ "$latest" =~ ^[0-9]+\.[0-9]+ ]] || return 0
   version_gt "$latest" "$AIDEVIX_VERSION" || return 0
-  # Shu versiya allaqachon eslatilgan bo'lsa — qayta bezovta qilmaymiz.
-  local notified=""
-  [[ -r "$NPM_NOTIFIED_FILE" ]] && notified="$(cat "$NPM_NOTIFIED_FILE" 2>/dev/null || true)"
-  [[ "$notified" == "$latest" ]] && return 0
-  mkdir -p "$STATE_DIR" 2>/dev/null || true
-  printf '%s\n' "$latest" >"$NPM_NOTIFIED_FILE" 2>/dev/null || true
   panel "$(t '🔄 Aidevix yangi versiya bor (%s → %s)' "$AIDEVIX_VERSION" "$latest")" \
     "$(t 'Yangilash uchun terminalga yozing:')" \
-    "    npm update -g $NPM_PKG" \
+    "    npm i -g $NPM_PKG@latest" \
     "$(t "Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1")"
 }
 

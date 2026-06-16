@@ -75,7 +75,7 @@ setup() {
   [ -z "$output" ]
 }
 
-@test "maybe_npm_update_hint: yangi versiya bo'lsa eslatadi va takrorlamaydi" {
+@test "maybe_npm_update_hint: yangi versiya bo'lsa HAR safar eslatadi" {
   unset AIDEVIX_NO_AUTOUPDATE CI
   PROJECT_ROOT="/usr/lib/node_modules/aidevix"
   mkdir -p "$STATE_DIR"
@@ -86,15 +86,13 @@ setup() {
 
   run maybe_npm_update_hint
   [ "$status" -eq 0 ]
-  [[ "$output" == *"npm update -g aidevix"* ]]
+  [[ "$output" == *"npm i -g aidevix@latest"* ]]
   [[ "$output" == *"999.0.0"* ]]
-  # Eslatilgan versiya yozilgan bo'lishi kerak.
-  [ "$(cat "$NPM_NOTIFIED_FILE")" = "999.0.0" ]
 
-  # Ikkinchi chaqiruv — o'sha versiya uchun jim.
+  # Ikkinchi chaqiruv ham eslatadi (agressiv — yangilaguncha har safar).
   run maybe_npm_update_hint
   [ "$status" -eq 0 ]
-  [ -z "$output" ]
+  [[ "$output" == *"999.0.0"* ]]
 }
 
 @test "maybe_npm_update_hint: kesh joriy versiyaga teng/eski bo'lsa jim" {

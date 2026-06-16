@@ -515,18 +515,18 @@ keyingi safar `aidevix` ishga tushganda:
 `npm install -g aidevix` bilan o'rnatsangiz paket `node_modules` ichida bo'ladi
 (`.git` yo'q), shuning uchun u **o'zini git orqali yangilamaydi**. Buning o'rniga
 `aidevix` npm registry'dan eng so'nggi versiyani jim tekshiradi va yangisi chiqsa
-**bir martalik eslatma** ko'rsatadi:
+**har ishga tushganda** eslatma ko'rsatadi (yangilaguningizcha):
 
 ```text
-🔄 Aidevix yangi versiya bor (1.1.0 → 1.2.0)
+🔄 Aidevix yangi versiya bor (1.4.0 → 1.5.0)
    Yangilash uchun terminalga yozing:
-       npm update -g aidevix
+       npm i -g aidevix@latest
    Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1
 ```
 
 - 📡 **Fonda:** tekshiruv ishga tushishni sekinlashtirmaydi (throttled, std 3 soat).
-- 🔕 **Bezovta qilmaydi:** har yangi versiya uchun faqat **bir marta** eslatadi.
-- 🙅 **Avtomatik o'rnatmaydi:** yangilashni siz `npm update -g aidevix` bilan o'zingiz qilasiz.
+- 🔁 **Eslatib turadi:** npm o'zini avtomatik yangilamagani uchun, yangi versiya bo'lsa har safar eslatadi.
+- 🙅 **Avtomatik o'rnatmaydi:** yangilashni siz `npm i -g aidevix@latest` bilan o'zingiz qilasiz.
 - ⛔ O'chirish: `export AIDEVIX_NO_AUTOUPDATE=1` (`CI=1` bo'lsa ham o'chiq).
 
 ---

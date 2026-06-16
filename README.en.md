@@ -373,18 +373,18 @@ pulls the change and shows what was updated.
 If you installed with `npm install -g aidevix`, the package lives inside
 `node_modules` (no `.git`), so it **can't update itself via git**. Instead,
 `aidevix` quietly checks the npm registry for the latest version and shows a
-**one-time reminder** when a newer one is available:
+reminder **on every run** (until you update) when a newer one is available:
 
 ```text
-🔄 A new Aidevix version is available (1.1.0 → 1.2.0)
+🔄 A new Aidevix version is available (1.4.0 → 1.5.0)
    To update, run:
-       npm update -g aidevix
+       npm i -g aidevix@latest
    Disable this notice: AIDEVIX_NO_AUTOUPDATE=1
 ```
 
 - 📡 **In the background:** the check never slows down startup (throttled, default 3h).
-- 🔕 **Not naggy:** shown only **once per new version**.
-- 🙅 **Never auto-installs:** you run `npm update -g aidevix` yourself.
+- 🔁 **Keeps reminding:** since npm doesn't auto-update, it nudges you each run until updated.
+- 🙅 **Never auto-installs:** you run `npm i -g aidevix@latest` yourself.
 - ⛔ Disable: `export AIDEVIX_NO_AUTOUPDATE=1` (also off when `CI=1`).
 
 ---
