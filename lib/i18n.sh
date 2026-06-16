@@ -22,9 +22,9 @@
 aidevix_detect_lang() {
   local l="${AIDEVIX_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}"
   case "$l" in
-    uz|uz[_.\-]*)                          printf 'uz' ;;
+    uz|uz[_.-]*)                           printf 'uz' ;;
     ''|C|POSIX|C.[!a-z]*|C.*|POSIX.*)      printf 'uz' ;;
-    en|en[_.\-]*)                          printf 'en' ;;
+    en|en[_.-]*)                           printf 'en' ;;
     *)                                     printf 'en' ;;
   esac
 }

@@ -322,7 +322,7 @@ stats_cmd() {
         "$(t '    • hodisa turi (install yoki launch)')" \
         "" \
         "$(t "❌ IP, foydalanuvchi nomi, kalit yoki boshqa shaxsiy ma'lumot YO'Q.")" \
-        "$(t 'Bu hammaga "qaysi CLI eng mashhur"ligini ko'rsatishga yordam beradi.')" \
+        "$(t "Bu hammaga \"qaysi CLI eng mashhur\"ligini ko'rsatishga yordam beradi.")" \
         "" \
         "$(t 'O'\''chirish: aidevix --stats off')"
       ;;
@@ -816,7 +816,7 @@ select_with_fzf() {
     --border=rounded
     --border-label=' ✦ Aidevix CLI '
     --border-label-pos=3
-    --margin=1,2
+    --margin='1,2'
     --padding=1
     --info=inline
     --color='fg:-1,bg:-1,hl:51,fg+:231,bg+:236,hl+:87,info:245,prompt:213,pointer:213,marker:84,header:245,border:60,label:87'
