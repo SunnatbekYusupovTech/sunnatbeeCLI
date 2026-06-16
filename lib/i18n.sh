@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+#
+# lib/i18n.sh — yengil ko'p tillilik (i18n) qatlami.
+#
+# Dizayn: GETTEXT uslubi. O'zbekcha manba matni KALIT bo'ladi; inglizcha
+# tarjima `lib/i18n/en.sh` da (assotsiativ massiv `MSG_EN`). Tarjima topilmasa
+# — o'zbekcha manba o'zgarishsiz qaytadi. Shu tufayli:
+#   • o'zbekcha (standart) til uchun hech narsa migratsiya qilish shart emas;
+#   • tarjima qisman bo'lsa ham hech narsa buzilmaydi (uz'ga qaytadi).
+#
+# Til tanlash tartibi (birinchi mos kelgani):
+#   1) AIDEVIX_LANG=uz|en        — aniq, hammasidan ustun
+#   2) LC_ALL / LC_MESSAGES / LANG locale'i:
+#        uz*           → uz
+#        C / POSIX / '' → uz   (standart/minimal — loyiha tili)
+#        boshqa har qanday (en*, ru*, de* ...) → en  (xalqaro o'qiluvchanlik)
+#
+# Foydalanuvchi xohlagan tilni majburlashi mumkin:  export AIDEVIX_LANG=en
+
+# aidevix_detect_lang — joriy tilni aniqlaydi: "uz" yoki "en".
+aidevix_detect_lang() {
+  local l="${AIDEVIX_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}"
+  case "$l" in
+    uz|uz[_.\-]*)                          printf 'uz' ;;
+    ''|C|POSIX|C.[!a-z]*|C.*|POSIX.*)      printf 'uz' ;;
+    en|en[_.\-]*)                          printf 'en' ;;
+    *)                                     printf 'en' ;;
+  esac
+}
+
+# Joriy til bir marta hal qilinadi (qayta hisoblamaslik uchun).
+AIDEVIX_LANG_RESOLVED="$(aidevix_detect_lang)"
+
+# Inglizcha katalog. Faqat "en" rejimida yuklanadi (uz uchun keraksiz I/O yo'q).
+declare -A MSG_EN
+if [[ "$AIDEVIX_LANG_RESOLVED" == "en" ]]; then
+  __i18n_dir="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+  if [[ -r "$__i18n_dir/i18n/en.sh" ]]; then
+    # shellcheck source=i18n/en.sh
+    source "$__i18n_dir/i18n/en.sh"
+  fi
+  unset __i18n_dir
+fi
+
+# t <uz-manba> [printf-arg...]
+#   O'zbekcha manbani KALIT sifatida ishlatib, joriy tildagi matnni QAYTARADI
+#   (chop etmaydi — odatdagi printf/log oqimiga mos). Argument berilsa, matn
+#   printf format-satri sifatida ishlatiladi (masalan "%s").
+t() {
+  local fmt="$1"; shift
+  if [[ "$AIDEVIX_LANG_RESOLVED" == "en" && -n "${MSG_EN[$fmt]+x}" ]]; then
+    fmt="${MSG_EN[$fmt]}"
+  fi
+  if (( $# > 0 )); then
+    # shellcheck disable=SC2059  # fmt — ataylab format-satr
+    printf "$fmt" "$@"
+  else
+    printf '%s' "$fmt"
+  fi
+}

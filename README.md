@@ -451,8 +451,30 @@ Saqlang — keyingi `aidevix` ishga tushishida agent menyuda paydo bo'ladi. 🎉
 > | `AI_PULT_CONFIG` | Boshqa konfiguratsiya faylini ko'rsatish |
 > | `AI_NO_ANIM=1` | Animatsiyalarni o'chirish (spinner/banner) |
 > | `NO_COLOR=1` | Ranglarni butunlay o'chirish |
+> | `AIDEVIX_LANG` | Interfeys tili: `uz` yoki `en` (berilmasa `LANG`/locale'dan aniqlanadi) |
 > | `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanishni o'chirish |
 > | `AIDEVIX_UPDATE_INTERVAL` | Yangilanish tekshiruvi oralig'i (sekund, standart 10800 = 3 soat) |
+
+---
+
+## 🌐 Til (o'zbekcha / inglizcha)
+
+Aidevix **o'zbekcha** (standart) va **inglizcha** ishlaydi. Interfeys tili
+`LANG`/locale'dan avtomatik aniqlanadi:
+
+- `uz*`, `C`/`POSIX` yoki bo'sh → **o'zbekcha**
+- `en*` (masalan `en_US.UTF-8`) yoki boshqa har qanday locale → **inglizcha**
+
+Tilni xohlagan vaqtda majburlash mumkin:
+
+```bash
+export AIDEVIX_LANG=en   # inglizcha
+export AIDEVIX_LANG=uz   # o'zbekcha
+aidevix --help
+```
+
+> Agent **izohlari** `config/agents.conf` dan keladi va hozircha tildan qat'i
+> nazar o'zbekcha — faqat ilovaning o'z interfeysi tarjima qilinadi.
 
 ---
 

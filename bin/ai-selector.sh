@@ -96,11 +96,45 @@ cleanup() {
   for f in ${TMPFILES[@]+"${TMPFILES[@]}"}; do rm -f "$f" 2>/dev/null || true; done
 }
 trap cleanup EXIT
-trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
 
 # --- Yordam matni ---------------------------------------------------------
 usage() {
-  cat <<'EOF'
+  if [[ "${AIDEVIX_LANG_RESOLVED:-uz}" == "en" ]]; then
+    cat <<'EOF'
+Aidevix CLI — manage your terminal AI CLI agents from a single menu.
+
+USAGE:
+  aidevix [OPTION | AGENT]
+
+OPTIONS:
+  (no argument)   Open the interactive menu (fzf if available, else numbered)
+  AGENT           Launch an agent directly by name or binary
+                  (e.g. `aidevix claude`, `aidevix gemini`)
+  -l, --list      List agents and their status
+  -f, --free      Open a menu of FREE agents only (🆓 / free tier)
+  -t, --top       Open a menu of the most popular (top) agents only
+  -u, --update    Update all installed agents
+  -d, --doctor    Check the environment (node/npm/python/fzf, PATH, agents)
+  -a, --add       Add a new agent interactively
+  -s, --stats [on|off]
+                  Global stats (opt-in): show status, or turn on/off.
+                  When on, the menu shows "🔥 #rank". Only the agent name +
+                  event type are sent (no personal data). Default: off.
+  -v, --version   Show the Aidevix CLI version
+  -h, --help      Show this help text
+
+CONFIGURATION:
+  Agents are read from the following file (first one found wins):
+    1) $AI_PULT_CONFIG (environment variable)
+    2) ~/.config/ai-cli/agents.conf
+    3) <repo>/config/agents.conf
+
+  Format (6 required + 2 optional fields):
+    NAME|BINARY|COMMAND|INSTALL|DESC|CATEGORY|AUTH|URL
+EOF
+  else
+    cat <<'EOF'
 Aidevix CLI — terminaldagi AI CLI agentlarini bitta menyudan boshqaring.
 
 FOYDALANISH:
@@ -132,6 +166,7 @@ KONFIGURATSIYA:
   Format (6 majburiy + 2 ixtiyoriy maydon):
     NOM|BINARY|BUYRUQ|INSTALL|IZOH|KATEGORIYA|AUTH|URL
 EOF
+  fi
 }
 
 # --- Ishlatiladigan konfiguratsiyani tanlash ------------------------------
@@ -150,7 +185,7 @@ resolve_config() {
 # foydalanuvchi config faqat repo'da bo'lmagan NOMLARNI qo'shadi (o'z agentlari).
 build_merged_config() {
   [[ -r "$REPO_CONFIG" || -r "$USER_CONFIG" ]] || \
-    die 1 "Konfiguratsiya topilmadi. Tekshirildi: '$REPO_CONFIG', '$USER_CONFIG'"
+    die 1 "$(t "Konfiguratsiya topilmadi. Tekshirildi: '%s', '%s'" "$REPO_CONFIG" "$USER_CONFIG")"
 
   local out; out="$(mktemp)"; TMPFILES+=("$out")
   local repo_names="" line nm
@@ -254,32 +289,32 @@ stats_cmd() {
   case "$arg" in
     on)
       set_global_stats on
-      panel "📊 Global statistika YOQILDI" \
-        "Rahmat! Endi agent ishga tushganda FAQAT quyidagi yuboriladi:" \
-        "    • agent nomi (masalan \"Claude Code\")" \
-        "    • hodisa turi (install yoki launch)" \
+      panel "$(t '📊 Global statistika YOQILDI')" \
+        "$(t 'Rahmat! Endi agent ishga tushganda FAQAT quyidagi yuboriladi:')" \
+        "$(t '    • agent nomi (masalan "Claude Code")')" \
+        "$(t '    • hodisa turi (install yoki launch)')" \
         "" \
-        "❌ IP, foydalanuvchi nomi, kalit yoki boshqa shaxsiy ma'lumot YO'Q." \
-        "Bu hammaga \"qaysi CLI eng mashhur\"ligini ko'rsatishga yordam beradi." \
+        "$(t "❌ IP, foydalanuvchi nomi, kalit yoki boshqa shaxsiy ma'lumot YO'Q.")" \
+        "$(t 'Bu hammaga "qaysi CLI eng mashhur"ligini ko'rsatishga yordam beradi.')" \
         "" \
-        "O'chirish: aidevix --stats off"
+        "$(t 'O'\''chirish: aidevix --stats off')"
       ;;
     off)
       set_global_stats off
-      log_success "Global statistika o'chirildi. Endi hech narsa yuborilmaydi."
+      log_success "$(t 'Global statistika o'\''chirildi. Endi hech narsa yuborilmaydi.')"
       ;;
     ''|status)
-      local state="o'chiq (opt-in)"
-      global_stats_enabled && state="yoqilgan"
-      panel "📊 Global statistika — holat: $state" \
-        "Server:   $AIDEVIX_STATS_URL" \
-        "Yuboriladi (yoqilganda): agent nomi + hodisa turi (shaxsiy ma'lumotsiz)" \
+      local state; state="$(t "o'chiq (opt-in)")"
+      global_stats_enabled && state="$(t 'yoqilgan')"
+      panel "$(t '📊 Global statistika — holat: %s' "$state")" \
+        "$(t 'Server:   %s' "$AIDEVIX_STATS_URL")" \
+        "$(t "Yuboriladi (yoqilganda): agent nomi + hodisa turi (shaxsiy ma'lumotsiz)")" \
         "" \
-        "Yoqish:   aidevix --stats on" \
-        "O'chirish: aidevix --stats off"
+        "$(t 'Yoqish:   aidevix --stats on')" \
+        "$(t 'O'\''chirish: aidevix --stats off')"
       ;;
     *)
-      die 2 "Noma'lum: 'aidevix --stats $arg'. Foydalanish: aidevix --stats [on|off]"
+      die 2 "$(t "Noma'lum: 'aidevix --stats %s'. Foydalanish: aidevix --stats [on|off]" "$arg")"
       ;;
   esac
 }
@@ -357,11 +392,11 @@ maybe_global_hint() {
   [[ -n "${CI:-}" ]] && return 0
   mkdir -p "$STATE_DIR" 2>/dev/null || return 0
   : >"$GLOBAL_HINT_FILE" 2>/dev/null || true
-  panel "💡 Maslahat — global statistika (ixtiyoriy)" \
-    "Qaysi AI CLI dunyoda eng mashhurligini menyuda ko'rmoqchimisiz?" \
+  panel "$(t '💡 Maslahat — global statistika (ixtiyoriy)')" \
+    "$(t 'Qaysi AI CLI dunyoda eng mashhurligini menyuda ko'\''rmoqchimisiz?')" \
     "    aidevix --stats on" \
-    "Yoqsangiz FAQAT agent nomi + hodisa turi yuboriladi (shaxsiy ma'lumotsiz)." \
-    "Standart — o'CHIQ. Hozir hech narsa o'zgarmaydi; bu shunchaki eslatma."
+    "$(t "Yoqsangiz FAQAT agent nomi + hodisa turi yuboriladi (shaxsiy ma'lumotsiz).")" \
+    "$(t 'Standart — o'\''CHIQ. Hozir hech narsa o'\''zgarmaydi; bu shunchaki eslatma.')"
 }
 
 # --- Birinchi ishga tushirishda login/auth yo'riqnomasi --------------------
@@ -404,23 +439,23 @@ maybe_show_auth_note() {
 
   if [[ -n "$url" ]] && should_open_login_link "$auth"; then
     # Login/registratsiya kerak — sahifani brauzerda ochamiz.
-    panel "🔐 '$name' — login/kalit kerak" \
-      "Bu agentni ishlatish uchun API kalit kerak:" \
+    panel "$(t "🔐 '%s' — login/kalit kerak" "$name")" \
+      "$(t 'Bu agentni ishlatish uchun API kalit kerak:')" \
       "    $auth" \
       "" \
-      "🌐 Kalit olish sahifasi brauzerda ochilmoqda:" \
+      "$(t '🌐 Kalit olish sahifasi brauzerda ochilmoqda:')" \
       "    $url" \
       "" \
-      "👉 Kalitni oling va agent ko'rsatmasiga amal qiling. Aidevix kalitni" \
-      "   ko'rmaydi va saqlamaydi — u faqat sizning kompyuteringizda qoladi."
+      "$(t '👉 Kalitni oling va agent ko'\''rsatmasiga amal qiling. Aidevix kalitni')" \
+      "$(t '   ko'\''rmaydi va saqlamaydi — u faqat sizning kompyuteringizda qoladi.')"
     open_url "$url"
     [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.8 || true
   elif [[ -n "$auth" ]]; then
     # Alohida loginga yo'naltirish SHART EMAS (kalit bor, agent o'zi login
     # qiladi, yoki bepul) — faqat qisqa eslatma beramiz, brauzer ochmaymiz.
-    panel "🔐 '$name' — eslatma" \
-      "Login talabi: $auth" \
-      "👉 Agar agent login so'rasa, ekrandagi ko'rsatmaga amal qiling."
+    panel "$(t "🔐 '%s' — eslatma" "$name")" \
+      "$(t 'Login talabi: %s' "$auth")" \
+      "$(t '👉 Agar agent login so'\''rasa, ekrandagi ko'\''rsatmaga amal qiling.')"
     [[ "${AI_ANIM:-0}" -eq 1 ]] && sleep 0.4 || true
   fi
 }
@@ -510,14 +545,14 @@ parse_agents() {
     [[ -z "$category" ]] && category="$DEFAULT_CATEGORY"
 
     if [[ -z "$name" || -z "$binary" || -z "$command" ]]; then
-      log_warn "Noto'g'ri qator o'tkazib yuborildi (#$lineno): $line"
+      log_warn "$(t "Noto'g'ri qator o'tkazib yuborildi (#%s): %s" "$lineno" "$line")"
       continue
     fi
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$desc" "$binary" "$command" "$install" "$category" "$auth" "$url"
     found=1
   done <"$config"
 
-  [[ "$found" -eq 1 ]] || die 1 "Konfiguratsiyada yaroqli agent topilmadi: $config"
+  [[ "$found" -eq 1 ]] || die 1 "$(t 'Konfiguratsiyada yaroqli agent topilmadi: %s' "$config")"
 }
 
 # --- Holat ustuni bilan to'ldirilgan qatorlar -----------------------------
@@ -529,9 +564,9 @@ build_rows() {
   # non-whitespace ajratgich (\037)ga o'giramiz — bo'sh maydonlar saqlanadi.
   while IFS=$'\037' read -r name desc binary command install category auth url; do
     if command -v "$binary" >/dev/null 2>&1; then
-      status="✓ o'rnatilgan"
+      status="$(t "✓ o'rnatilgan")"
     else
-      status="✗ yo'q"
+      status="$(t '✗ yo'\''q')"
     fi
     # Maydon tartibi: status 7-, auth 8-, url 9- (preview/menu $7 status'ga tayanadi).
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
@@ -544,9 +579,9 @@ build_rows() {
 # (eng ko'p ishlatilgan tepada); "MARTA" ustuni shu sanoqni ko'rsatadi.
 list_agents() {
   local config; config="$(resolve_config)"
-  log_info "Konfiguratsiya: $config"
+  log_info "$(t 'Konfiguratsiya: %s' "$config")"
   local statsfile="$STATS_FILE"; [[ -r "$statsfile" ]] || statsfile=/dev/null
-  printf '\n%s%-18s %-14s %-9s %-7s %-34s %s%s\n' "$C_BOLD" "AGENT" "HOLAT" "GURUH" "MARTA" "IZOH" "LOGIN" "$C_RESET"
+  printf '\n%s%-18s %-14s %-9s %-7s %-34s %s%s\n' "$C_BOLD" "$(t AGENT)" "$(t HOLAT)" "$(t GURUH)" "$(t MARTA)" "$(t IZOH)" "$(t LOGIN)" "$C_RESET"
   printf '%s\n' "-------------------------------------------------------------------------------------------------"
   local name desc binary command install category status auth url count color
   while IFS=$'\037' read -r name desc binary command install category status auth url count; do
@@ -566,7 +601,11 @@ list_agents() {
 preview_agent() {
   local name="$1" datafile="$2"
   [[ -r "$datafile" ]] || return 0
-  awk -F'\t' -v n="$name" '
+  awk -F'\t' -v n="$name" \
+    -v l_inst="$(t 'o'\''rnatilgan')" -v l_noinst="$(t 'o'\''rnatilmagan')" \
+    -v l_status="$(t 'Holat')" -v l_binary="$(t 'Binar')" -v l_cmd="$(t 'Buyruq')" \
+    -v l_cat="$(t 'Kategoriya')" -v l_login="$(t 'Login')" -v l_url="$(t 'Havola')" \
+    -v l_install="$(t 'O'\''rnatish:')" -v l_unset="$(t '(belgilanmagan)')" '
     BEGIN {
       ESC = sprintf("%c", 27)
       B   = ESC "[1m";      R = ESC "[0m"
@@ -575,22 +614,22 @@ preview_agent() {
     }
     $1 == n {
       # Holat belgisi
-      if ($7 ~ /✓/) { badge = GRN "● o\47rnatilgan" R }
-      else          { badge = RED "○ o\47rnatilmagan" R }
+      if ($7 ~ /✓/) { badge = GRN "● " l_inst R }
+      else          { badge = RED "○ " l_noinst R }
 
       print ""
       print "  " B CY $1 R
       print "  " GY "────────────────────────────" R
       print ""
-      print "  " GY "Holat     " R badge
-      print "  " GY "Binar     " R $3
-      print "  " GY "Buyruq    " R MG $4 R
-      print "  " GY "Kategoriya" R $6
-      print "  " GY "Login     " R ($8 == "" ? GY "—" R : $8)
-      if ($9 != "") print "  " GY "Havola    " R CY $9 R
+      print "  " GY sprintf("%-10s", l_status) R badge
+      print "  " GY sprintf("%-10s", l_binary) R $3
+      print "  " GY sprintf("%-10s", l_cmd)    R MG $4 R
+      print "  " GY sprintf("%-10s", l_cat)    R $6
+      print "  " GY sprintf("%-10s", l_login)  R ($8 == "" ? GY "—" R : $8)
+      if ($9 != "") print "  " GY sprintf("%-10s", l_url) R CY $9 R
       print ""
-      print "  " GY "O\47rnatish:" R
-      print "    " ($5 == "" ? GY "(belgilanmagan)" R : $5)
+      print "  " GY l_install R
+      print "    " ($5 == "" ? GY l_unset R : $5)
       print ""
       print "  " GY "────────────────────────────" R
       print "  " $2
@@ -654,7 +693,7 @@ select_with_fzf() {
       | fzf --ansi \
             --delimiter='\t' \
             --with-nth=1 \
-            --prompt='  qidirish › ' \
+            --prompt="$(t '  qidirish › ')" \
             --pointer='▶' \
             --marker='✓' \
             --height=~90% \
@@ -666,16 +705,16 @@ select_with_fzf() {
             --padding=1 \
             --info=inline \
             --color='fg:-1,bg:-1,hl:51,fg+:231,bg+:236,hl+:87,info:245,prompt:213,pointer:213,marker:84,header:245,border:60,label:87' \
-            --header='↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor' \
+            --header="$(t '↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor')" \
             --preview "bash \"$SELF\" __preview {2} \"$datafile\"" \
             --preview-window='right,52%,wrap,border-left' \
             --preview-label=' tafsilot '
   )" || {
     rc=$?
-    if [[ "$rc" -eq 130 ]]; then log_info "Bekor qilindi."; exit 0; fi
-    die "$rc" "fzf kutilmagan kod bilan to'xtadi: $rc"
+    if [[ "$rc" -eq 130 ]]; then log_info "$(t 'Bekor qilindi.')"; exit 0; fi
+    die "$rc" "$(t 'fzf kutilmagan kod bilan to'\''xtadi: %s' "$rc")"
   }
-  [[ -z "$selection" ]] && { log_info "Hech narsa tanlanmadi."; exit 0; }
+  [[ -z "$selection" ]] && { log_info "$(t 'Hech narsa tanlanmadi.')"; exit 0; }
   # Yashirin NAME maydoni — TAB'dan keyingi qism.
   printf '%s' "$selection" | sed 's/.*\t//'
 }
@@ -690,17 +729,17 @@ select_with_numbers() {
     displays+=("$disp"); names+=("$nm")
   done <<<"$menu"
 
-  [[ "${#names[@]}" -gt 0 ]] || die 1 "Menyu uchun agent topilmadi."
+  [[ "${#names[@]}" -gt 0 ]] || die 1 "$(t 'Menyu uchun agent topilmadi.')"
 
-  log_warn "fzf topilmadi — oddiy menyu ishlatilmoqda (yaxshiroq tajriba uchun fzf o'rnating)."
-  printf '\n%sAI CLI tanlang:%s\n' "${C_BOLD:-}" "${C_RESET:-}" >&2
+  log_warn "$(t "fzf topilmadi — oddiy menyu ishlatilmoqda (yaxshiroq tajriba uchun fzf o'rnating).")"
+  printf '\n%s%s%s\n' "${C_BOLD:-}" "$(t 'AI CLI tanlang:')" "${C_RESET:-}" >&2
   local i
   for i in "${!names[@]}"; do
     printf '%b%3d)%b %b\n' "${C_BLUE:-}" "$((i + 1))" "${C_RESET:-}" "${displays[$i]}" >&2
   done
   printf '%s\n' "----------------------------------------" >&2
 
-  local choice="" prompt="Raqam kiriting (1-${#names[@]}, ESC=bekor) › "
+  local choice="" prompt; prompt="$(t 'Raqam kiriting (1-%s, ESC=bekor) › ' "${#names[@]}")"
   trap - ERR
   if { : >/dev/tty; } 2>/dev/null; then
     printf '%s' "$prompt" >/dev/tty
@@ -709,11 +748,11 @@ select_with_numbers() {
     printf '%s' "$prompt" >&2
     IFS= read -r choice || choice=""
   fi
-  trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
 
-  [[ -z "$choice" ]] && { log_info "Bekor qilindi."; exit 0; }
+  [[ -z "$choice" ]] && { log_info "$(t 'Bekor qilindi.')"; exit 0; }
   if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#names[@]} )); then
-    die 2 "Noto'g'ri tanlov: '$choice'."
+    die 2 "$(t "Noto'g'ri tanlov: '%s'." "$choice")"
   fi
   printf '%s' "${names[$((choice - 1))]}"
 }
@@ -722,8 +761,8 @@ select_with_numbers() {
 run_menu() {
   local filter="${1:-}"
   case "$filter" in
-    free) banner "Aidevix CLI" "🆓 bepul agentlar — login/kalitsiz yoki bepul tier" ;;
-    top)  banner "Aidevix CLI" "⭐ eng mashhur agentlar — vibecoding uchun" ;;
+    free) banner "Aidevix CLI" "$(t '🆓 bepul agentlar — login/kalitsiz yoki bepul tier')" ;;
+    top)  banner "Aidevix CLI" "$(t '⭐ eng mashhur agentlar — vibecoding uchun')" ;;
     *)    banner ;;
   esac
 
@@ -734,12 +773,12 @@ run_menu() {
   case "$filter" in
     free)
       rows="$(awk -F'\t' '$8 ~ /🆓/ || tolower($8) ~ /bepul|free/' <<<"$rows")"
-      [[ -n "$rows" ]] || { log_info "Bepul agent topilmadi."; exit 0; }
+      [[ -n "$rows" ]] || { log_info "$(t 'Bepul agent topilmadi.')"; exit 0; }
       ;;
     top)
       rows="$(awk -F'\t' -v tops="|claude|codex|gemini|copilot|cursor-agent|aider|opencode|qwen|codebuff|freebuff|" \
               'index(tops, "|" $3 "|") > 0' <<<"$rows")"
-      [[ -n "$rows" ]] || { log_info "Top agent topilmadi."; exit 0; }
+      [[ -n "$rows" ]] || { log_info "$(t 'Top agent topilmadi.')"; exit 0; }
       ;;
   esac
 
@@ -772,7 +811,7 @@ launch_selected() {
   local rows="$1" name="$2"
   local row binary command install auth url
   row="$(awk -F'\t' -v n="$name" '$1 == n { print; exit }' <<<"$rows")"
-  [[ -n "$row" ]] || die 1 "Tanlangan agent topilmadi: $name"
+  [[ -n "$row" ]] || die 1 "$(t 'Tanlangan agent topilmadi: %s' "$name")"
 
   binary="$(printf '%s'  "$row" | cut -f3)"
   command="$(printf '%s' "$row" | cut -f4)"
@@ -805,7 +844,7 @@ quick_launch() {
     name="$(awk -F'\t' -v q="$query" 'BEGIN{ql=tolower(q)}
               index(tolower($1),ql) || index(tolower($3),ql) { print $1; exit }' <<<"$rows")"
   fi
-  [[ -n "$name" ]] || die 2 "Mos agent topilmadi: '$query'. Ro'yxat uchun: aidevix --list"
+  [[ -n "$name" ]] || die 2 "$(t "Mos agent topilmadi: '%s'. Ro'yxat uchun: aidevix --list" "$query")"
 
   launch_selected "$rows" "$name"
 }
@@ -816,13 +855,13 @@ ensure_installed() {
 
   command -v "$binary" >/dev/null 2>&1 && return 0
 
-  log_warn "Agent topilmadi: '$name' (kerakli buyruq: '$binary')."
+  log_warn "$(t "Agent topilmadi: '%s' (kerakli buyruq: '%s')." "$name" "$binary")"
   if [[ -z "$install" ]]; then
-    die 127 "Avtomatik o'rnatish buyrug'i belgilanmagan. Iltimos, '$name'ni qo'lda o'rnating."
+    die 127 "$(t "Avtomatik o'rnatish buyrug'i belgilanmagan. Iltimos, '%s'ni qo'lda o'rnating." "$name")"
   fi
 
-  log_info "O'rnatish buyrug'i: $install"
-  local ans="" prompt="❓ '$name' hozir o'rnatilsinmi? [y/N] "
+  log_info "$(t "O'rnatish buyrug'i: %s" "$install")"
+  local ans="" prompt; prompt="$(t "❓ '%s' hozir o'rnatilsinmi? [y/N] " "$name")"
   # Javobni avval /dev/tty'dan o'qishga urinamiz (fzf stdin'ni band qilgan
   # bo'lishi mumkin), bo'lmasa oddiy stdin'ga qaytamiz. Device xatosi ERR
   # tutqichini ishga tushirmasligi uchun tutqichni vaqtincha o'chiramiz.
@@ -834,96 +873,96 @@ ensure_installed() {
     printf '%s' "$prompt" >&2
     IFS= read -r ans || ans=""
   fi
-  trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
 
   if [[ ! "$ans" =~ ^[Yy]$ ]]; then
-    die 127 "Bekor qilindi. '$name'ni qo'lda o'rnatish uchun: $install"
+    die 127 "$(t "Bekor qilindi. '%s'ni qo'lda o'rnatish uchun: %s" "$name" "$install")"
   fi
 
   # O'rnatishdan OLDIN: kerakli dastur (npm/python3/curl...) bormi? Yo'q bo'lsa
   # foydalanuvchiga nima yetishmayotganini SODDA tilda aytamiz.
   local tool; tool="$(detect_install_tool "$install")"
   if [[ -n "$tool" ]] && ! command -v "$tool" >/dev/null 2>&1; then
-    panel "❌ '$name' o'rnatilmadi — avval bitta dastur kerak" \
-      "'$name'ni o'rnatish uchun kompyuteringizda \"$tool\" bo'lishi shart," \
-      "lekin u topilmadi." \
+    panel "$(t "❌ '%s' o'rnatilmadi — avval bitta dastur kerak" "$name")" \
+      "$(t "'%s'ni o'rnatish uchun kompyuteringizda \"%s\" bo'lishi shart," "$name" "$tool")" \
+      "$(t 'lekin u topilmadi.')" \
       "" \
       "👉 $(tool_hint "$tool")" \
       "" \
-      "Shuni o'rnatib, terminalni qayta oching va yana \"aidevix\" deb yozing."
-    die 127 "'$tool' topilmadi — '$name' o'rnatilmadi."
+      "$(t 'Shuni o'\''rnatib, terminalni qayta oching va yana "aidevix" deb yozing.')"
+    die 127 "$(t "'%s' topilmadi — '%s' o'rnatilmadi." "$tool" "$name")"
   fi
 
   # ERR tutqichini vaqtincha o'chirib, o'rnatish xatosini o'zimiz ushlaymiz.
   trap - ERR
-  if ! spin_run "📦 '$name' o'rnatilmoqda" "$install"; then
+  if ! spin_run "$(t "📦 '%s' o'rnatilmoqda" "$name")" "$install"; then
     local tail_lines="" log_text=""
     if [[ -r "${SPIN_LOG:-}" ]]; then
       tail_lines="$(tail -n 6 "$SPIN_LOG" 2>/dev/null || true)"
       log_text="$(cat "$SPIN_LOG" 2>/dev/null || true)"
     fi
-    trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+    trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
 
     # O'rnatuvchi "bu OS qo'llab-quvvatlanmaydi" desa — adashtiruvchi (internet/
     # sudo/curl) sabablar o'rniga halol, aniq xabar beramiz.
     if printf '%s' "$log_text" | grep -qiE 'unsupported (operating system|os|platform|architecture)|not supported|no (prebuilt|pre-built|binary)|MINGW|MSYS|windows is not'; then
-      panel "🚫 '$name' bu operatsion tizimda qo'llab-quvvatlanmaydi" \
-        "'$name' o'rnatuvchisi sizning tizimingizni (Windows / Git Bash —" \
-        "MINGW64) qo'llab-quvvatlamasligini aytdi. Bu — internet yoki ruxsat" \
-        "muammosi EMAS; shunchaki bu agentning Windows uchun o'rnatuvchisi yo'q." \
+      panel "$(t "🚫 '%s' bu operatsion tizimda qo'llab-quvvatlanmaydi" "$name")" \
+        "$(t "'%s' o'rnatuvchisi sizning tizimingizni (Windows / Git Bash —" "$name")" \
+        "$(t 'MINGW64) qo'\''llab-quvvatlamasligini aytdi. Bu — internet yoki ruxsat')" \
+        "$(t "muammosi EMAS; shunchaki bu agentning Windows uchun o'rnatuvchisi yo'q.")" \
         "" \
-        "👉 Variantlar:" \
-        "  • Boshqa agentni tanlang (masalan Claude Code, Gemini, Aider — ular" \
-        "    Windows'da ishlaydi)." \
-        "  • Yoki '$name'ni WSL (Windows Subsystem for Linux) ichida ishlating." \
-        "  • Agent rasmiy sahifasida Windows uchun yo'l bor-yo'qligini tekshiring."
+        "$(t '👉 Variantlar:')" \
+        "$(t '  • Boshqa agentni tanlang (masalan Claude Code, Gemini, Aider — ular')" \
+        "$(t "    Windows'da ishlaydi).")" \
+        "$(t "  • Yoki '%s'ni WSL (Windows Subsystem for Linux) ichida ishlating." "$name")" \
+        "$(t '  • Agent rasmiy sahifasida Windows uchun yo'\''l bor-yo'\''qligini tekshiring.')"
       if [[ -n "$tail_lines" ]]; then
-        printf '%s  Xato tafsiloti (oxirgi qatorlar):%s\n' "$C_GRAY" "$C_RESET" >&2
+        printf '%s  %s%s\n' "$C_GRAY" "$(t 'Xato tafsiloti (oxirgi qatorlar):')" "$C_RESET" >&2
         printf '%s\n' "$tail_lines" | sed 's/^/    /' >&2
         printf '\n' >&2
       fi
       rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-      die 127 "'$name' bu OS'da qo'llab-quvvatlanmaydi."
+      die 127 "$(t "'%s' bu OS'da qo'llab-quvvatlanmaydi." "$name")"
     fi
 
-    panel "❌ '$name' o'rnatishda xatolik yuz berdi" \
-      "Quyidagi buyruq muvaffaqiyatsiz tugadi:" \
+    panel "$(t "❌ '%s' o'rnatishda xatolik yuz berdi" "$name")" \
+      "$(t 'Quyidagi buyruq muvaffaqiyatsiz tugadi:')" \
       "    $install" \
       "" \
-      "Ko'pincha sabab quyidagilardan biri bo'ladi:" \
-      "  1) 🌐 Internet yo'q yoki sekin — Wi-Fi/ulanishni tekshiring." \
-      "  2) 🔒 Ruxsat yetarli emas — buyruqni \"sudo\" bilan sinab ko'ring." \
-      "  3) 📦 \"${tool:-dastur}\" eski — uni yangilab, qaytadan urinib ko'ring." \
+      "$(t "Ko'pincha sabab quyidagilardan biri bo'ladi:")" \
+      "$(t '  1) 🌐 Internet yo'\''q yoki sekin — Wi-Fi/ulanishni tekshiring.')" \
+      "$(t '  2) 🔒 Ruxsat yetarli emas — buyruqni "sudo" bilan sinab ko'\''ring.')" \
+      "$(t '  3) 📦 "%s" eski — uni yangilab, qaytadan urinib ko'\''ring.' "${tool:-$(t dastur)}")" \
       "" \
-      "👉 Aniq sababni ko'rish uchun yuqoridagi buyruqni terminalga o'zingiz" \
-      "   nusxalab ishga tushiring — xato matni to'liq ko'rinadi."
+      "$(t '👉 Aniq sababni ko'\''rish uchun yuqoridagi buyruqni terminalga o'\''zingiz')" \
+      "$(t '   nusxalab ishga tushiring — xato matni to'\''liq ko'\''rinadi.')"
     if [[ -n "$tail_lines" ]]; then
-      printf '%s  Xato tafsiloti (oxirgi qatorlar):%s\n' "$C_GRAY" "$C_RESET" >&2
+      printf '%s  %s%s\n' "$C_GRAY" "$(t 'Xato tafsiloti (oxirgi qatorlar):')" "$C_RESET" >&2
       printf '%s\n' "$tail_lines" | sed 's/^/    /' >&2
       printf '\n' >&2
     fi
     rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-    die 1 "O'rnatish muvaffaqiyatsiz tugadi: $name."
+    die 1 "$(t "O'rnatish muvaffaqiyatsiz tugadi: %s." "$name")"
   fi
   rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-  trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
 
   # O'rnatish yangi bin papkasi yaratgan bo'lishi mumkin — PATH'ni qayta
   # boyitamiz va hash'ni tozalaymiz, shunda binar joriy sessiyada ko'rinadi.
   augment_tool_path
 
   if ! command -v "$binary" >/dev/null 2>&1; then
-    panel "⚠️  '$name' o'rnatildi, lekin hali ishga tushmadi" \
-      "Dastur o'rnatildi, biroq tizim \"$binary\" buyrug'ini hali topa olmayapti." \
-      "Bu odatda \"PATH\" sozlamasi yangilanmagani uchun bo'ladi." \
+    panel "$(t "⚠️  '%s' o'rnatildi, lekin hali ishga tushmadi" "$name")" \
+      "$(t 'Dastur o'\''rnatildi, biroq tizim "%s" buyrug'\''ini hali topa olmayapti.' "$binary")" \
+      "$(t 'Bu odatda "PATH" sozlamasi yangilanmagani uchun bo'\''ladi.')" \
       "" \
-      "👉 Yechimi oson: terminalni butunlay yopib, qaytadan oching," \
-      "   so'ng yana \"aidevix\" deb yozing — endi ishlaydi." \
+      "$(t '👉 Yechimi oson: terminalni butunlay yopib, qaytadan oching,')" \
+      "$(t '   so'\''ng yana "aidevix" deb yozing — endi ishlaydi.')" \
       "" \
-      "Agar shunda ham yordam bermasa: \"aidevix --doctor\" buyrug'i muammoni ko'rsatadi."
-    die 127 "'$binary' hali PATH'da ko'rinmayapti — terminalni qayta oching."
+      "$(t 'Agar shunda ham yordam bermasa: "aidevix --doctor" buyrug'\''i muammoni ko'\''rsatadi.')"
+    die 127 "$(t "'%s' hali PATH'da ko'rinmayapti — terminalni qayta oching." "$binary")"
   fi
-  log_success "O'rnatildi: $name"
+  log_success "$(t "O'rnatildi: %s" "$name")"
   report_usage_global "$name" "install"
 }
 
@@ -940,7 +979,7 @@ launch_agent() {
 # --- O'rnatilgan agentlarni yangilash -------------------------------------
 update_agents() {
   local config; config="$(resolve_config)"
-  log_info "Konfiguratsiya: $config"
+  log_info "$(t 'Konfiguratsiya: %s' "$config")"
   local rows; rows="$(build_rows "$config")"
   local name desc binary command install category status auth url
   local checked=0 ok=0 fail=0
@@ -949,77 +988,77 @@ update_agents() {
     command -v "$binary" >/dev/null 2>&1 || continue
     checked=$((checked + 1))
     if [[ -z "$install" ]]; then
-      log_warn "$name: o'rnatish buyrug'i yo'q — o'tkazib yuborildi."
+      log_warn "$(t "%s: o'rnatish buyrug'i yo'q — o'tkazib yuborildi." "$name")"
       continue
     fi
     trap - ERR
-    if spin_run "🔄 $name yangilanmoqda" "$install"; then
+    if spin_run "$(t '🔄 %s yangilanmoqda' "$name")" "$install"; then
       ok=$((ok + 1))
     else
       fail=$((fail + 1))
     fi
     rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-    trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+    trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
   done < <(printf '%s\n' "$rows" | tr '\t' '\037')
 
   if [[ "$checked" -eq 0 ]]; then
-    log_warn "O'rnatilgan agent topilmadi — yangilash uchun avval agent o'rnating."
+    log_warn "$(t "O'rnatilgan agent topilmadi — yangilash uchun avval agent o'rnating.")"
   else
-    log_success "Yangilash tugadi: $ok ta muvaffaqiyatli, $fail ta xato (jami $checked)."
+    log_success "$(t 'Yangilash tugadi: %s ta muvaffaqiyatli, %s ta xato (jami %s).' "$ok" "$fail" "$checked")"
   fi
 }
 
 # --- Muhit tashxisi (doctor) ----------------------------------------------
 doctor() {
-  banner "Aidevix — Tashxis" "muhitingizni tekshiramiz"
+  banner "$(t 'Aidevix — Tashxis')" "$(t 'muhitingizni tekshiramiz')"
 
   local tool
-  printf '%sVositalar:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '%s%s%s\n' "${C_BOLD:-}" "$(t 'Vositalar:')" "${C_RESET:-}"
   for tool in bash fzf node npm python3 curl git; do
     if command -v "$tool" >/dev/null 2>&1; then
       printf '  %b✓%b %-8s %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$tool" "$(command -v "$tool")"
     else
-      printf '  %b✗%b %-8s topilmadi\n' "${C_RED:-}" "${C_RESET:-}" "$tool"
+      printf '  %b✗%b %-8s %s\n' "${C_RED:-}" "${C_RESET:-}" "$tool" "$(t 'topilmadi')"
     fi
   done
 
-  printf '\n%sPATH tekshiruvi:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '\n%s%s%s\n' "${C_BOLD:-}" "$(t 'PATH tekshiruvi:')" "${C_RESET:-}"
   if command -v npm >/dev/null 2>&1; then
     local prefix bindir
     prefix="$(npm config get prefix 2>/dev/null || true)"
-    printf '  npm prefix: %s\n' "${prefix:-(aniqlanmadi)}"
+    printf '  npm prefix: %s\n' "${prefix:-$(t '(aniqlanmadi)')}"
     for bindir in "$prefix/bin" "$prefix"; do
       [[ -d "$bindir" ]] || continue
       if [[ ":$PATH:" == *":$bindir:"* ]]; then
-        printf '  %b✓%b PATH ichida: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$bindir"
+        printf '  %b✓%b %s %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$(t 'PATH ichida:')" "$bindir"
       else
-        printf '  %b✗%b PATH da YO''Q: %s  (aidevix uni o'\''zi qo'\''shadi)\n' "${C_YELLOW:-}" "${C_RESET:-}" "$bindir"
+        printf '  %b✗%b %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$(t "PATH da YO'Q: %s  (aidevix uni o'zi qo'shadi)" "$bindir")"
       fi
     done
   else
-    printf '  %b!%b npm topilmadi — npm orqali o'\''rnatiladigan agentlar ishlamaydi.\n' "${C_YELLOW:-}" "${C_RESET:-}"
+    printf '  %b!%b %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$(t "npm topilmadi — npm orqali o'rnatiladigan agentlar ishlamaydi.")"
   fi
   if [[ -d "$HOME/.local/bin" ]]; then
     if [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
-      printf '  %b✓%b PATH ichida: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$HOME/.local/bin"
+      printf '  %b✓%b %s %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$(t 'PATH ichida:')" "$HOME/.local/bin"
     else
-      printf '  %b✗%b PATH da YO''Q: %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$HOME/.local/bin"
+      printf '  %b✗%b %s %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$(t "PATH da YO'Q:")" "$HOME/.local/bin"
     fi
   fi
 
-  printf '\n%sGlobal statistika:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '\n%s%s%s\n' "${C_BOLD:-}" "$(t 'Global statistika:')" "${C_RESET:-}"
   if global_stats_enabled; then
-    printf '  %b✓%b yoqilgan — server: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$AIDEVIX_STATS_URL"
+    printf '  %b✓%b %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$(t 'yoqilgan — server: %s' "$AIDEVIX_STATS_URL")"
     if [[ -r "$GLOBAL_CACHE" ]]; then
-      printf '  %b✓%b kesh mavjud: %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$GLOBAL_CACHE"
+      printf '  %b✓%b %s\n' "${C_GREEN:-}" "${C_RESET:-}" "$(t 'kesh mavjud: %s' "$GLOBAL_CACHE")"
     else
-      printf '  %b!%b kesh hali yo'\''q (keyingi menyuda yangilanadi)\n' "${C_YELLOW:-}" "${C_RESET:-}"
+      printf '  %b!%b %s\n' "${C_YELLOW:-}" "${C_RESET:-}" "$(t "kesh hali yo'q (keyingi menyuda yangilanadi)")"
     fi
   else
-    printf '  %b•%b o'\''chiq (opt-in). Yoqish: aidevix --stats on\n' "${C_GRAY:-}" "${C_RESET:-}"
+    printf '  %b•%b %s\n' "${C_GRAY:-}" "${C_RESET:-}" "$(t "o'chiq (opt-in). Yoqish: aidevix --stats on")"
   fi
 
-  printf '\n%sAgentlar holati:%s\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '\n%s%s%s\n' "${C_BOLD:-}" "$(t 'Agentlar holati:')" "${C_RESET:-}"
   list_agents
 }
 
@@ -1035,21 +1074,21 @@ prompt_tty() {
     printf '%s' "$q" >&2
     IFS= read -r __val || __val=""
   fi
-  trap 'die 1 "Kutilmagan xato: $BASH_COMMAND (qator: $LINENO)"' ERR
+  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
   printf -v "$__var" '%s' "$__val"
 }
 
 add_agent() {
-  printf '\n%s➕ Yangi agent qo'\''shish%s\n\n' "${C_BOLD:-}" "${C_RESET:-}"
+  printf '\n%s%s%s\n\n' "${C_BOLD:-}" "$(t '➕ Yangi agent qo'\''shish')" "${C_RESET:-}"
   local name binary command install desc category auth url
-  prompt_tty "Nom (masalan: My Agent)        : " name
-  prompt_tty "Binary (PATH'dagi buyruq nomi) : " binary
-  prompt_tty "Ishga tushirish buyrug'i       : " command
-  prompt_tty "O'rnatish buyrug'i (ixtiyoriy) : " install
-  prompt_tty "Izoh (ixtiyoriy)               : " desc
-  prompt_tty "Kategoriya (ixtiyoriy)         : " category
-  prompt_tty "Login/kalit izohi (ixtiyoriy)  : " auth
-  prompt_tty "Login/hujjat havolasi (ixtiyoriy): " url
+  prompt_tty "$(t 'Nom (masalan: My Agent)        : ')" name
+  prompt_tty "$(t "Binary (PATH'dagi buyruq nomi) : ")" binary
+  prompt_tty "$(t "Ishga tushirish buyrug'i       : ")" command
+  prompt_tty "$(t "O'rnatish buyrug'i (ixtiyoriy) : ")" install
+  prompt_tty "$(t 'Izoh (ixtiyoriy)               : ')" desc
+  prompt_tty "$(t 'Kategoriya (ixtiyoriy)         : ')" category
+  prompt_tty "$(t 'Login/kalit izohi (ixtiyoriy)  : ')" auth
+  prompt_tty "$(t 'Login/hujjat havolasi (ixtiyoriy): ')" url
 
   name="$(trim "$name")"; binary="$(trim "$binary")"; command="$(trim "$command")"
   install="$(trim "$install")"; desc="$(trim "$desc")"; category="$(trim "$category")"
@@ -1058,10 +1097,10 @@ add_agent() {
   [[ -z "$category" ]] && category="$DEFAULT_CATEGORY"
 
   if [[ -z "$name" || -z "$binary" ]]; then
-    die 2 "Nom va Binary majburiy. Bekor qilindi."
+    die 2 "$(t 'Nom va Binary majburiy. Bekor qilindi.')"
   fi
   if [[ "$name$binary$command$install$desc$category$auth$url" == *"|"* ]]; then
-    die 2 "Maydonlar ichida '|' belgisi bo'lmasligi kerak. Bekor qilindi."
+    die 2 "$(t "Maydonlar ichida '|' belgisi bo'lmasligi kerak. Bekor qilindi.")"
   fi
 
   # Foydalanuvchi configi — faqat QO'SHIMCHA agentlar (repo nusxalanmaydi, shunda
@@ -1072,7 +1111,7 @@ add_agent() {
   fi
   printf '%s|%s|%s|%s|%s|%s|%s|%s\n' \
     "$name" "$binary" "$command" "$install" "$desc" "$category" "$auth" "$url" >>"$USER_CONFIG"
-  log_success "Qo'shildi: $name  →  $USER_CONFIG"
+  log_success "$(t "Qo'shildi: %s  →  %s" "$name" "$USER_CONFIG")"
 }
 
 # --- Avtomatik yangilanish (git orqali) -----------------------------------
@@ -1113,24 +1152,24 @@ auto_update() {
   remote_sha="$("${g[@]}" rev-parse FETCH_HEAD 2>/dev/null || true)"
   [[ -n "$local_sha" && -n "$remote_sha" && "$local_sha" != "$remote_sha" ]] || return 0
 
-  printf '\n  %s%s🔄 Aidevix CLI — yangi versiya topildi, yangilanmoqda...%s\n' \
-    "${C_BOLD:-}" "${C_TITLE:-}" "${C_RESET:-}" >&2
+  printf '\n  %s%s%s%s\n' \
+    "${C_BOLD:-}" "${C_TITLE:-}" "$(t '🔄 Aidevix CLI — yangi versiya topildi, yangilanmoqda...')" "${C_RESET:-}" >&2
   local subj
   subj="$("${g[@]}" log --no-merges --pretty='format:    • %s' "HEAD..FETCH_HEAD" 2>/dev/null | head -4 || true)"
   if [[ -n "$subj" ]]; then
-    printf '  %sYangi o\047zgarishlar:%s\n' "${C_GRAY:-}" "${C_RESET:-}" >&2
+    printf '  %s%s%s\n' "${C_GRAY:-}" "$(t "Yangi o'zgarishlar:")" "${C_RESET:-}" >&2
     printf '%s\n' "$subj" >&2
   fi
 
   if "${g[@]}" reset --hard --quiet FETCH_HEAD 2>/dev/null; then
-    printf '  %s✓ Yangilandi!%s Yangi imkoniyatlar tayyor.\n\n' "${C_GREEN:-}" "${C_RESET:-}" >&2
+    printf '  %s%s%s %s\n\n' "${C_GREEN:-}" "$(t '✓ Yangilandi!')" "${C_RESET:-}" "$(t 'Yangi imkoniyatlar tayyor.')" >&2
     # Skript ham yangilangan bo'lishi mumkin — yangi versiyani qayta ishga tushiramiz.
     trap - ERR
     cleanup 2>/dev/null || true
     exec bash "$SELF" "$@"
   fi
-  printf '  %s! Avtomatik yangilab bo\047lmadi%s — keyinroq qayta urinadi.\n\n' \
-    "${C_YELLOW:-}" "${C_RESET:-}" >&2
+  printf '  %s%s%s\n\n' \
+    "${C_YELLOW:-}" "$(t "! Avtomatik yangilab bo'lmadi — keyinroq qayta urinadi.")" "${C_RESET:-}" >&2
   return 0
 }
 
@@ -1205,10 +1244,10 @@ maybe_npm_update_hint() {
   [[ "$notified" == "$latest" ]] && return 0
   mkdir -p "$STATE_DIR" 2>/dev/null || true
   printf '%s\n' "$latest" >"$NPM_NOTIFIED_FILE" 2>/dev/null || true
-  panel "🔄 Aidevix yangi versiya bor ($AIDEVIX_VERSION → $latest)" \
-    "Yangilash uchun terminalga yozing:" \
+  panel "$(t '🔄 Aidevix yangi versiya bor (%s → %s)' "$AIDEVIX_VERSION" "$latest")" \
+    "$(t 'Yangilash uchun terminalga yozing:')" \
     "    npm update -g $NPM_PKG" \
-    "Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1"
+    "$(t "Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1")"
 }
 
 # --- Argumentlar ----------------------------------------------------------
@@ -1238,7 +1277,7 @@ main() {
     -f|--free)     run_menu free ;;
     -t|--top)      run_menu top ;;
     "")            run_menu ;;
-    -*)            log_error "Noma'lum tanlov: $1"; echo; usage; exit 2 ;;
+    -*)            log_error "$(t "Noma'lum tanlov: %s" "$1")"; echo; usage; exit 2 ;;
     *)             quick_launch "$1" ;;
   esac
 }

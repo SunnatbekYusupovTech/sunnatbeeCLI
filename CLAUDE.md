@@ -9,7 +9,7 @@ bitta menyudan boshqaradigan launcher**. `config/agents.conf` dan agentlar ro'yx
 o'qiydi, `fzf` (yoki raqamli) menyu ko'rsatadi, tanlangan agentni ishga tushiradi;
 o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build yo'q).
 
-- Til: foydalanuvchiga ko'rinadigan **barcha matn o'zbekcha**.
+- Til: manba matnlar **o'zbekcha** (standart). **i18n** orqali inglizcha ham qo'llab-quvvatlanadi (`AIDEVIX_LANG=en` yoki `LANG`). Qarang `lib/i18n.sh`.
 - Platformalar: Linux, macOS, Windows (Git Bash / MINGW64).
 - Buyruq nomi: `aidevix`.
 
@@ -17,7 +17,9 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | Yo'l | Vazifa |
 |------|--------|
 | `bin/ai-selector.sh` | **Asosiy skript** (~920 qator). Barcha mantiq shu yerda: menyu, parsing, o'rnatish, doctor, auto-update. |
-| `lib/common.sh` | Umumiy yordamchilar: ranglar, `log_*`, `die`, `require_cmd`, `panel`, `banner`, `spin_run`, `tool_hint`, `open_url`. STDERR'ga yozadi. |
+| `lib/common.sh` | Umumiy yordamchilar: ranglar, `log_*`, `die`, `require_cmd`, `panel`, `banner`, `spin_run`, `tool_hint`, `open_url`. STDERR'ga yozadi. Boshida `lib/i18n.sh` ni `source` qiladi. |
+| `lib/i18n.sh` | **Ko'p tillilik (i18n)** — `aidevix_detect_lang` (AIDEVIX_LANG > LANG/LC_* > uz), `t()` gettext-uslubidagi lookup. Manba o'zbekcha = kalit; tarjima topilmasa o'zbekchaga qaytadi. |
+| `lib/i18n/en.sh` | Inglizcha tarjima katalogi (`MSG_EN["uz manba"]="en"`). Faqat "en" rejimida yuklanadi. Yangi `t "..."` qo'shsang — kalitni shu yerga ham qo'sh. |
 | `config/agents.conf` | Agentlar ro'yxati. Format: `NAME\|BINARY\|COMMAND\|INSTALL\|DESC\|CATEGORY\|AUTH\|URL` (5–7 ta `\|`). |
 | `bin/aidevix.cmd`, `bin/aidevix.ps1` | Windows wrapperlari — Git Bash topib `ai-selector.sh`ni chaqiradi. |
 | `bin/cli.js` | npm uchun Node launcher — bash'ni topib `ai-selector.sh`ni `spawnSync` bilan ishga tushiradi (`package.json` `bin`). |
@@ -51,7 +53,7 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 
 ## Konventsiyalar (PRga ta'sir qiladi)
 - Har skript boshida `set -Eeuo pipefail`. ERR tutqich `die` qiladi; TTY o'qishdan oldin tutqich vaqtincha o'chiriladi.
-- Har funksiya ustida qisqa **o'zbekcha** izoh. Yangi matnlar ham o'zbekcha, sodda.
+- Har funksiya ustida qisqa **o'zbekcha** izoh. Foydalanuvchiga ko'rinadigan yangi matnni **`t "..."`** bilan o'rab yoz (manba o'zbekcha) va o'sha kalitni **`lib/i18n/en.sh`** ga inglizcha tarjimasi bilan qo'sh. `%s` joy egalari `t`ga argument sifatida beriladi.
 - `lib/common.sh` log/UI'lari **STDERR**'ga yozadi — stdout faqat qaytariladigan qiymat uchun.
 - Ranglar `UI_TTY`ga bog'liq; `NO_COLOR` hurmat qilinadi.
 - Commit: Conventional Commits (`feat:`, `fix:`, `docs:`, ...). Release qo'lda emas — teg orqali.
@@ -61,6 +63,7 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | O'zgaruvchi | Ta'siri |
 |-------------|---------|
 | `AI_PULT_CONFIG` | Aniq config yo'li (test/maxsus). Berilsa — faqat o'sha. |
+| `AIDEVIX_LANG` | Interfeys tili: `uz` yoki `en`. Berilmasa `LANG`/`LC_*` locale'idan aniqlanadi (uz*/C/bo'sh → uz; en*/boshqa → en). |
 | `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanish (git) **va** npm yangilanish eslatmasini o'chiradi. |
 | `AIDEVIX_UPDATE_INTERVAL` | Tekshirish oralig'i (sekund, std 10800). |
 | `CI=1` | Animatsiya + auto_update **+ global statistika** o'chiq. |

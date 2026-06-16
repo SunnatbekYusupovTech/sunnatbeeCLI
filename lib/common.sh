@@ -11,6 +11,20 @@
 #   • die()  — xabar chiqarib, berilgan exit-code bilan to'xtaydi
 #   • require_cmd() — kerakli buyruq mavjudligini tekshiradi
 
+# --- Ko'p tillilik (i18n) — t() va til aniqlash ---------------------------
+# Yengil gettext qatlami: o'zbekcha manba = kalit, inglizcha = lib/i18n/en.sh.
+__common_dir="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+if [[ -r "$__common_dir/i18n.sh" ]]; then
+  # shellcheck source=i18n.sh
+  source "$__common_dir/i18n.sh"
+fi
+unset __common_dir
+# i18n yuklanmasa ham buzilmasin — t() zaxira ta'rifi (manbani qaytaradi).
+if ! declare -F t >/dev/null 2>&1; then
+  # shellcheck disable=SC2059  # $f — ataylab format-satr
+  t() { local f="$1"; shift; if (( $# )); then printf "$f" "$@"; else printf '%s' "$f"; fi; }
+fi
+
 # --- Rang/animatsiya yoqilishini aniqlash --------------------------------
 # Quyidagi tartibda hal qilinadi:
 #   1) NO_COLOR o'rnatilgan bo'lsa            → o'chiq (standart hurmat)
@@ -89,9 +103,9 @@ require_cmd() {
   local hint="${2:-}"
   if ! command -v "$cmd" >/dev/null 2>&1; then
     if [[ -n "$hint" ]]; then
-      die 127 "'$cmd' topilmadi. O'rnatish uchun: $hint"
+      die 127 "$(t "'%s' topilmadi. O'rnatish uchun: %s" "$cmd" "$hint")"
     else
-      die 127 "'$cmd' topilmadi. Iltimos, uni o'rnatib, qaytadan urinib ko'ring."
+      die 127 "$(t "'%s' topilmadi. Iltimos, uni o'rnatib, qaytadan urinib ko'ring." "$cmd")"
     fi
   fi
 }
@@ -116,23 +130,23 @@ panel() {
 tool_hint() {
   case "$1" in
     npm|node|nodejs)
-      printf '%s' "Node.js kerak (npm u bilan birga keladi). https://nodejs.org saytiga kiring, katta yashil \"LTS\" tugmasini bosib yuklab oling, o'rnating va terminalni qayta oching." ;;
+      t "Node.js kerak (npm u bilan birga keladi). https://nodejs.org saytiga kiring, katta yashil \"LTS\" tugmasini bosib yuklab oling, o'rnating va terminalni qayta oching." ;;
     python3|python|pip|pip3)
-      printf '%s' "Python 3 kerak. https://www.python.org/downloads saytidan yuklab oling. Windows'da o'rnatishda \"Add Python to PATH\" katagiga belgi qo'yishni unutmang." ;;
+      t "Python 3 kerak. https://www.python.org/downloads saytidan yuklab oling. Windows'da o'rnatishda \"Add Python to PATH\" katagiga belgi qo'yishni unutmang." ;;
     curl)
-      printf '%s' "curl kerak. Ubuntu/Debian: \"sudo apt install curl\" · macOS: oldindan bor · Windows: Git Bash bilan birga keladi." ;;
+      t "curl kerak. Ubuntu/Debian: \"sudo apt install curl\" · macOS: oldindan bor · Windows: Git Bash bilan birga keladi." ;;
     wget)
-      printf '%s' "wget kerak. Ubuntu/Debian: \"sudo apt install wget\"." ;;
+      t "wget kerak. Ubuntu/Debian: \"sudo apt install wget\"." ;;
     git)
-      printf '%s' "git kerak. https://git-scm.com/downloads saytidan yuklab olib o'rnating." ;;
+      t "git kerak. https://git-scm.com/downloads saytidan yuklab olib o'rnating." ;;
     fzf)
-      printf '%s' "fzf kerak. macOS: \"brew install fzf\" · Ubuntu: \"sudo apt install fzf\" · Windows: \"winget install fzf\"." ;;
+      t "fzf kerak. macOS: \"brew install fzf\" · Ubuntu: \"sudo apt install fzf\" · Windows: \"winget install fzf\"." ;;
     bash)
-      printf '%s' "bash kerak. Windows'da Git for Windows o'rnating: https://git-scm.com/download/win" ;;
+      t "bash kerak. Windows'da Git for Windows o'rnating: https://git-scm.com/download/win" ;;
     brew)
-      printf '%s' "Homebrew kerak. https://brew.sh saytidagi buyruqni terminalga nusxalang." ;;
+      t "Homebrew kerak. https://brew.sh saytidagi buyruqni terminalga nusxalang." ;;
     *)
-      printf '%s' "'$1' nomli dastur kerak, lekin u topilmadi. Internetdan \"$1 install\" deb qidirib o'rnating." ;;
+      t "'%s' nomli dastur kerak, lekin u topilmadi. Internetdan \"%s install\" deb qidirib o'rnating." "$1" "$1" ;;
   esac
 }
 
@@ -182,7 +196,7 @@ hr() {
 #   Aidevix CLI brendi: AD monogrammasi (gradient) + harfma-harf animatsiya.
 #   TTY bo'lmasa — oddiy matn. assets/log.jpg dagi "AD" logosining ASCII shakli.
 banner() {
-  local title="${1:-Aidevix CLI}" subtitle="${2:-barcha AI agentlar — bitta pultda}"
+  local title="${1:-Aidevix CLI}" subtitle="${2:-$(t 'barcha AI agentlar — bitta pultda')}"
   if [[ "${UI_TTY:-0}" -ne 1 ]]; then
     printf '\n  %s\n  %s\n\n' "$title" "$subtitle" >&2
     return 0
@@ -360,5 +374,5 @@ loader_3d() {
 
 # ui_launch <nom> — agentni ishga tushirishdan oldingi 3D animatsion loader.
 ui_launch() {
-  loader_3d "🚀 Ishga tushirilmoqda" "${1:-}"
+  loader_3d "$(t '🚀 Ishga tushirilmoqda')" "${1:-}"
 }

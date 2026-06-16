@@ -7,6 +7,17 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+### Qo'shildi
+- **🌐 Ko'p tillilik (i18n) — inglizcha interfeys** — endi Aidevix o'zbekcha
+  (standart) va inglizcha ishlaydi. Til `LANG`/locale'dan avtomatik aniqlanadi
+  (`en*`/boshqa → en; `uz*`/`C`/bo'sh → uz) yoki `AIDEVIX_LANG=en|uz` bilan
+  majburlanadi. Yengil gettext qatlami: `lib/i18n.sh` (`aidevix_detect_lang`,
+  `t()`) + `lib/i18n/en.sh` katalog (o'zbekcha manba = kalit; tarjima topilmasa
+  o'zbekchaga qaytadi — hech narsa buzilmaydi). Butun CLI interfeysi (yordam,
+  menyu, doctor, stats, o'rnatish/xato xabarlari, auth eslatmalari) tarjima
+  qilingan. Testlar: `tests/i18n.bats` (15). Agent izohlari (`agents.conf`)
+  hozircha o'zbekcha.
+
 ## [1.2.0] — 2026-06-15
 
 ### Qo'shildi

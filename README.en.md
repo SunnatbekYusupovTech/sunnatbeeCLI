@@ -320,8 +320,30 @@ NAME | BINARY | COMMAND | INSTALL | DESCRIPTION | CATEGORY | AUTH | URL
 > | `AI_PULT_CONFIG` | Point to a different config file |
 > | `AI_NO_ANIM=1` | Disable animations (spinner/banner) |
 > | `NO_COLOR=1` | Disable colors entirely |
+> | `AIDEVIX_LANG` | Interface language: `uz` or `en` (auto-detected from `LANG`/locale if unset) |
 > | `AIDEVIX_NO_AUTOUPDATE=1` | Disable auto-update |
 > | `AIDEVIX_UPDATE_INTERVAL` | Update-check interval (seconds, default 10800 = 3h) |
+
+---
+
+## 🌐 Language (English / Uzbek)
+
+Aidevix speaks both **Uzbek** (default) and **English**. The interface language is
+detected automatically from your `LANG`/locale:
+
+- `en*` (e.g. `en_US.UTF-8`) or any non-Uzbek locale → **English**
+- `uz*`, `C`/`POSIX`, or unset → **Uzbek**
+
+Force a language explicitly at any time:
+
+```bash
+export AIDEVIX_LANG=en   # English
+export AIDEVIX_LANG=uz   # Uzbek
+aidevix --help
+```
+
+> Agent **descriptions** come from `config/agents.conf` and are currently Uzbek
+> regardless of language — only the app's own interface is translated.
 
 ---
 
