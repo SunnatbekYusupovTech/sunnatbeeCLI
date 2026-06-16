@@ -7,6 +7,8 @@ loyiha [Semantik versiyalash](https://semver.org/lang/uz/) (SemVer)ga amal qilad
 
 ## [Nashr qilinmagan]
 
+## [1.3.0] — 2026-06-16
+
 ### Qo'shildi
 - **🌐 Ko'p tillilik (i18n) — inglizcha interfeys** — endi Aidevix o'zbekcha
   (standart) va inglizcha ishlaydi. Til `LANG`/locale'dan avtomatik aniqlanadi
