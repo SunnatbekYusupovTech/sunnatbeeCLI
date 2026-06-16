@@ -83,6 +83,8 @@ MSG_EN["(belgilanmagan)"]="(not set)"
 # --- menu -----------------------------------------------------------------
 MSG_EN["  qidirish › "]="  search › "
 MSG_EN["↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor"]="↑/↓ select · type to search · ENTER launch · ESC cancel"
+MSG_EN["Moslik topilmadi — Backspace bilan qidiruvni tahrirlang."]="No match — edit your search with Backspace."
+MSG_EN["q/ESC = bekor · Enter = tanlash"]="q/ESC = cancel · Enter = select"
 MSG_EN["Bekor qilindi."]="Cancelled."
 MSG_EN["fzf kutilmagan kod bilan to'xtadi: %s"]="fzf exited with an unexpected code: %s"
 MSG_EN["Hech narsa tanlanmadi."]="Nothing selected."

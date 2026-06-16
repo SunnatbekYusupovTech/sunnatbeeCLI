@@ -82,6 +82,11 @@ NPM_CHECK_STAMP="$STATE_DIR/npm_check"               # tekshirishni throttle vaq
 # Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
 DEFAULT_CATEGORY="AI"
 
+# Tanlangan (curated) "top/mashhur" agentlar — binary nomi bo'yicha. Bitta haqiqat
+# manbai: `--top` filtri HAM, menyu saralashi/⭐ belgisi HAM shunga tayanadi. Yangi
+# mashhur CLI chiqsa — shu ro'yxatga binary nomini qo'shing (bo'sh joy bilan).
+TOP_AGENTS="claude codex gemini copilot cursor-agent aider opencode qwen codebuff freebuff"
+
 # --- Umumiy yordamchilarni yuklash ----------------------------------------
 LIB="$PROJECT_ROOT/lib/common.sh"
 if [[ ! -r "$LIB" ]]; then
@@ -96,6 +101,8 @@ TMPFILES=()
 cleanup() {
   ui_spin_stop 2>/dev/null || true
   show_cursor
+  # Ichki menyu avto-o'rashni o'chirgan bo'lishi mumkin — har ehtimolga tiklaymiz.
+  [[ "${UI_TTY:-0}" -eq 1 ]] && printf '\033[?7h' >&2 2>/dev/null || true
   local f
   for f in ${TMPFILES[@]+"${TMPFILES[@]}"}; do rm -f "$f" 2>/dev/null || true; done
 }
@@ -116,7 +123,9 @@ USAGE:
   aidevix [OPTION | AGENT]
 
 OPTIONS:
-  (no argument)   Open the interactive menu (fzf if available, else numbered)
+  (no argument)   Open the interactive menu (fzf if available, otherwise a
+                  built-in ↑/↓ arrow menu with live details; numbered as a
+                  last resort when there is no terminal)
   AGENT           Launch an agent directly by name or binary
                   (e.g. `aidevix claude`, `aidevix gemini`)
   -l, --list      List agents and their status
@@ -155,7 +164,9 @@ FOYDALANISH:
   aidevix [TANLOV | AGENT]
 
 TANLOVLAR:
-  (argumentsiz)   Interaktiv menyuni ochadi (fzf bo'lsa fzf, bo'lmasa raqamli)
+  (argumentsiz)   Interaktiv menyuni ochadi (fzf bo'lsa fzf; bo'lmasa ichki
+                  ↑/↓ ko'rsatkichli menyu — tafsilot bilan; terminal bo'lmasa
+                  oxirgi chora sifatida raqamli)
   AGENT           Agentni nomi yoki binari bo'yicha to'g'ridan-to'g'ri ishga tushiradi
                   (masalan: `aidevix claude`, `aidevix gemini`)
   -l, --list      Agentlar ro'yxati va holatini ko'rsatadi
@@ -749,7 +760,7 @@ build_menu() {
   local rows="$1" statsfile="${2:-}" globalfile="${3:-}"
   [[ -n "$statsfile" && -r "$statsfile" ]] || statsfile=/dev/null
   [[ -n "$globalfile" && -r "$globalfile" ]] || globalfile=/dev/null
-  awk -F'\t' -v sf="$statsfile" -v gf="$globalfile" \
+  awk -F'\t' -v sf="$statsfile" -v gf="$globalfile" -v tops=" $TOP_AGENTS " \
             -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
             -v t="${C_TITLE:-}" -v gy="${C_GRAY:-}" -v b="${C_BOLD:-}" -v mg="${C_MAGENTA:-}" '
     function human(x) {
@@ -770,7 +781,7 @@ build_menu() {
       }
     }
     {
-      name=$1; desc=$2; status=$7; auth=$8;
+      name=$1; desc=$2; binary=$3; status=$7; auth=$8;
       if (status ~ /✓/) { icon = g "✓" z } else { icon = r "✗" z }
       badge = "";
       if (index(auth, "🆓"))      badge = "🆓";
@@ -778,13 +789,16 @@ build_menu() {
       else if (index(auth, "🔑")) badge = "🔑";
       else if (index(auth, "💳")) badge = "💳";
       c = cnt[name] + 0;
+      istop = (index(tops, " " binary " ") > 0) ? 1 : 0;
       use = (c > 0) ? sprintf("  %s·%d×%s", gy, c, z) : "";
       gbadge = (name in grank) ? sprintf("  %s🔥#%d·%s%s", mg, grank[name], human(gcnt[name] + 0), z) : "";
-      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s%s", icon, b, t, name, z, gy, desc, z, badge, use, gbadge)
-      # Tartiblash kalitlari: 1) lokal sanoq (kamayish), 2) config indeksi (barqaror).
-      printf "%010d\t%06d\t%s\t%s\n", c, (++idx), disp, name
+      star = istop ? sprintf("  %s⭐%s", t, z) : "";
+      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s%s%s", icon, b, t, name, z, gy, desc, z, badge, use, gbadge, star)
+      # Tartiblash kalitlari: 1) lokal sanoq (kamayish), 2) top/mashhurlik (kamayish —
+      # yangi foydalanuvchida ham mashhurlar tepada), 3) config indeksi (barqaror).
+      printf "%010d\t%d\t%06d\t%s\t%s\n", c, istop, (++idx), disp, name
     }
-  ' <<<"$rows" | sort -t"$(printf '\t')" -k1,1nr -k2,2n | cut -f3-
+  ' <<<"$rows" | sort -t"$(printf '\t')" -k1,1nr -k2,2nr -k3,3n | cut -f4-
 }
 
 # --- fzf orqali tanlash ---------------------------------------------------
@@ -875,6 +889,178 @@ select_with_numbers() {
   printf '%s' "${names[$((choice - 1))]}"
 }
 
+# --- fzf bo'lmaganda: ↑/↓ klavishali ichki menyu (built-in TUI) -----------
+# fzf yo'q bo'lganda ham QULAY tanlash beradi: ko'rsatkich (▶) bilan yuqori/pastga
+# yuriladi, pastda tanlangan agentning TO'LIQ tafsiloti (buyruq, login, havola,
+# o'rnatish, izoh) ko'rinadi, harf yozib QIDIRISH mumkin. ENTER — ishga tushiradi;
+# ESC yoki (qidiruv bo'sh bo'lsa) q — bekor. Tanlangan agent NOMI stdout'ga
+# qaytadi; butun interfeys /dev/tty'ga chiziladi. fzf preview Windows'da o'chiq
+# bo'lgani uchun bu menyu HAR JOYDA to'liq ma'lumot ko'rsatadi va tashqi `bash`
+# qism-jarayoni ochmaydi (cygwin fork xatosi yo'q). Chaqiruvchi (run_menu) TTY
+# borligini oldindan tekshiradi; TTY yo'q bo'lsa raqamli menyuga o'tadi.
+select_with_arrows() {
+  local menu="$1" datafile="$2"
+  local -a displays=() names=()
+  local disp nm
+  while IFS=$'\t' read -r disp nm; do
+    [[ -z "$nm" ]] && continue
+    displays+=("$disp"); names+=("$nm")
+  done <<<"$menu"
+  local total=${#names[@]}
+  [[ "$total" -gt 0 ]] || die 1 "$(t 'Menyu uchun agent topilmadi.')"
+
+  # Interaktiv TTY shart (chaqiruvchi tekshirgan; bu — himoya uchun ikkilamchi).
+  { : >/dev/tty; } 2>/dev/null || return 2  # faqat poyga holatida; trap'ni tripmaslik uchun shartli kontekstda emas — gate run_menu'da
+
+  # Har agent uchun QIDIRUV matni (kichik harf, ANSI'siz) — bir marta tayyorlaymiz.
+  local -a hay=()
+  local i
+  for i in "${!names[@]}"; do
+    hay[i]="$(awk -F'\t' -v n="${names[i]}" '$1==n{print tolower($1" "$2" "$3" "$6" "$8); exit}' "$datafile")"
+  done
+
+  # Ko'rinadigan qatorlar soni — terminal balandligiga moslab cheklaymiz.
+  local th; th="$(tput lines 2>/dev/null || echo 24)"; [[ "$th" =~ ^[0-9]+$ ]] || th=24
+  local page=$(( total < 10 ? total : 10 ))
+  local maxlist=$(( th - 14 )); (( maxlist < 3 )) && maxlist=3
+  (( page > maxlist )) && page=maxlist
+  local DET=6                                    # tafsilot bloki — qat'iy 6 qator (_ad bilan mos)
+  local FH=$(( 2 + page + 1 + 1 + DET + 1 ))     # ramka balandligi (o'zgarmas): header2 + page + count1 + hr1 + DET + footer1
+
+  # ESC ketma-ketligi uchun timeout: eski bash (3.x) kasr -t qabul qilmaydi.
+  local esctmo=0.02; (( ${BASH_VERSINFO[0]:-4} < 4 )) && esctmo=1
+
+  local cur=0 topv=0 query="" first=1
+  local -a vis=()
+
+  # _af — joriy filtrga mos indekslar ro'yxatini (vis) quradi.
+  _af() {
+    vis=(); local q ii
+    q="$(printf '%s' "$query" | tr '[:upper:]' '[:lower:]')"
+    for ii in "${!names[@]}"; do
+      if [[ -z "$q" ]]; then vis+=("$ii"); continue; fi
+      case "${hay[ii]}" in *"$q"*) vis+=("$ii") ;; esac
+    done
+    (( cur >= ${#vis[@]} )) && cur=$(( ${#vis[@]} - 1 ))
+    (( cur < 0 )) && cur=0
+  }
+
+  # _ad <nom> — tanlangan agentning qat'iy DET-qatorli tafsilotini det[] ga yozadi.
+  local -a det=()
+  _ad() {
+    det=(); local n2="${1:-}" d2 b2 c2 ins cat st a u badge
+    if [[ -n "$n2" ]]; then
+      IFS=$'\037' read -r d2 b2 c2 ins cat st a u < <(
+        awk -F'\t' -v n="$n2" '$1==n{print $2"\037"$3"\037"$4"\037"$5"\037"$6"\037"$7"\037"$8"\037"$9; exit}' "$datafile")
+    fi
+    if [[ "$st" == *✓* ]]; then badge="${C_GREEN}● $(t "o'rnatilgan")${C_RESET}"
+    else                        badge="${C_RED}○ $(t "o'rnatilmagan")${C_RESET}"; fi
+    [[ -z "$a" ]] && a="—"; [[ -z "$u" ]] && u="—"; [[ -z "$ins" ]] && ins="$(t '(belgilanmagan)')"
+    det+=("  ${C_BOLD}${C_TITLE}${n2}${C_RESET}   ${badge}")
+    det+=("  ${C_GRAY}$(t 'Buyruq')${C_RESET}     ${C_MAGENTA}${c2}${C_RESET}")
+    det+=("  ${C_GRAY}$(t 'Kategoriya')${C_RESET} ${cat}    ${C_GRAY}$(t 'Login')${C_RESET} ${a}")
+    det+=("  ${C_GRAY}$(t 'Havola')${C_RESET}     ${C_CYAN}${u}${C_RESET}")
+    det+=("  ${C_GRAY}$(t "O'rnatish:")${C_RESET} ${ins}")
+    det+=("  ${C_GRAY}${d2}${C_RESET}")
+  }
+
+  # _ar — butun ramkani (qat'iy FH qator) chizadi.
+  _ar() {
+    local nvis=${#vis[@]}
+    (( cur < topv )) && topv=$cur
+    (( cur >= topv + page )) && topv=$(( cur - page + 1 ))
+    (( topv < 0 )) && topv=0
+    local -a out=()
+    out+=("  ${C_BOLD}${C_TITLE}✦ Aidevix CLI${C_RESET}  ${C_GRAY}$(t '↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor')${C_RESET}")
+    if [[ -n "$query" ]]; then out+=("  ${C_MAGENTA}$(t '  qidirish › ')${C_RESET}${query}")
+    else                       out+=("  ${C_GRAY}$(t '  qidirish › ')${C_RESET}"); fi
+    local r vi oi
+    for (( r=0; r<page; r++ )); do
+      vi=$(( topv + r ))
+      if (( vi < nvis )); then
+        oi=${vis[vi]}
+        if (( vi == cur )); then out+=("  ${C_TITLE}▶${C_RESET} ${displays[oi]}")
+        else                     out+=("    ${displays[oi]}"); fi
+      else
+        out+=("")
+      fi
+    done
+    if (( nvis > 0 )); then out+=("  ${C_GRAY}$(printf '%d/%d' $((cur+1)) "$nvis")${C_RESET}")
+    else                    out+=("  ${C_GRAY}$(printf '0/%d' "$total")${C_RESET}"); fi
+    out+=("  ${C_GRAY}$(hr 30)${C_RESET}")
+    if (( nvis > 0 )); then
+      _ad "${names[${vis[cur]}]}"
+    else
+      det=("  ${C_GRAY}$(t 'Moslik topilmadi — Backspace bilan qidiruvni tahrirlang.')${C_RESET}" "" "" "" "" "")
+    fi
+    local dl
+    for dl in "${det[@]}"; do out+=("$dl"); done
+    out+=("  ${C_GRAY}$(t 'q/ESC = bekor · Enter = tanlash')${C_RESET}")
+
+    # Birinchi marta to'liq chizamiz; keyin ramka boshiga qaytib qayta yozamiz.
+    if (( first )); then first=0; else printf '\033[%dA' "$FH" >/dev/tty; fi
+    local L
+    for L in "${out[@]}"; do printf '\r\033[K%s\n' "$L" >/dev/tty; done
+  }
+
+  # Kursorni yashir + avto-o'rashni o'chir (uzun satr ramka balandligini buzmasin).
+  printf '\033[?25l\033[?7l' >/dev/tty
+  _af
+
+  local key seq action selected="" cancelled=0 _t
+  while :; do
+    _ar
+    IFS= read -rsn1 key </dev/tty || { cancelled=1; break; }
+    action="char"
+    if [[ "$key" == $'\033' ]]; then
+      IFS= read -rsn2 -t "$esctmo" seq </dev/tty || seq=""
+      case "$seq" in
+        '['A|OA) action=up ;;
+        '['B|OB) action=down ;;
+        '['C|OC) action=right ;;
+        '['D|OD) action=left ;;
+        '['H|OH) action=home ;;
+        '['F|OF) action=end ;;
+        '['5)    IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgup ;;
+        '['6)    IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgdn ;;
+        '')      action=cancel ;;
+        *)       action=cancel ;;
+      esac
+    elif [[ -z "$key" ]]; then action=enter
+    elif [[ "$key" == $'\177' || "$key" == $'\b' ]]; then action=bs
+    elif [[ "$key" == $'\t' ]]; then action=down
+    fi
+
+    case "$action" in
+      up)    (( cur > 0 )) && cur=$(( cur - 1 )) ;;
+      down)  (( ${#vis[@]} > 0 && cur < ${#vis[@]} - 1 )) && cur=$(( cur + 1 )) ;;
+      pgup)  cur=$(( cur - page )); (( cur < 0 )) && cur=0 ;;
+      pgdn)  cur=$(( cur + page )); (( ${#vis[@]} > 0 && cur > ${#vis[@]} - 1 )) && cur=$(( ${#vis[@]} - 1 )); (( cur < 0 )) && cur=0 ;;
+      home)  cur=0 ;;
+      end)   cur=$(( ${#vis[@]} - 1 )); (( cur < 0 )) && cur=0 ;;
+      enter) (( ${#vis[@]} > 0 )) && { selected="${names[${vis[cur]}]}"; break; } ;;
+      bs)    [[ -n "$query" ]] && { query="${query%?}"; _af; } ;;
+      cancel) cancelled=1; break ;;
+      char)
+        case "$key" in
+          q|Q) [[ -z "$query" ]] && { cancelled=1; break; }; query+="$key"; _af ;;
+          *)   query+="$key"; _af ;;
+        esac ;;
+    esac
+  done
+
+  # Ramkani tozalab, kursor/o'rashni tiklaymiz (kursor ramka boshida qoladi).
+  printf '\033[%dA' "$FH" >/dev/tty
+  local cl; for (( cl=0; cl<FH; cl++ )); do printf '\r\033[K\n' >/dev/tty; done
+  printf '\033[%dA\033[?25h\033[?7h' "$FH" >/dev/tty
+
+  if (( cancelled )); then
+    log_info "$(t 'Bekor qilindi.')"
+    exit 0
+  fi
+  printf '%s' "$selected"
+}
+
 # --- Interaktiv menyu -----------------------------------------------------
 run_menu() {
   local filter="${1:-}"
@@ -903,8 +1089,8 @@ run_menu() {
       [[ -n "$rows" ]] || { log_info "$(t 'Bepul agent topilmadi.')"; exit 0; }
       ;;
     top)
-      rows="$(awk -F'\t' -v tops="|claude|codex|gemini|copilot|cursor-agent|aider|opencode|qwen|codebuff|freebuff|" \
-              'index(tops, "|" $3 "|") > 0' <<<"$rows")"
+      rows="$(awk -F'\t' -v tops=" $TOP_AGENTS " \
+              'index(tops, " " $3 " ") > 0' <<<"$rows")"
       [[ -n "$rows" ]] || { log_info "$(t 'Top agent topilmadi.')"; exit 0; }
       ;;
   esac
@@ -923,15 +1109,23 @@ run_menu() {
   local menu; menu="$(build_menu "$rows" "$STATS_FILE" "$globalfile")"
   ui_spin_stop
 
-  local name
+  local name datafile
+  datafile="$(mktemp)"; TMPFILES+=("$datafile")
+  printf '%s\n' "$rows" >"$datafile"
   if command -v fzf >/dev/null 2>&1; then
-    local datafile; datafile="$(mktemp)"; TMPFILES+=("$datafile")
-    printf '%s\n' "$rows" >"$datafile"
     name="$(select_with_fzf "$menu" "$datafile")"
+  elif { : >/dev/tty; } 2>/dev/null; then
+    # fzf yo'q, lekin TTY bor — ichki ↑/↓ menyu (to'liq ma'lumotli).
+    name="$(select_with_arrows "$menu" "$datafile")"
   else
+    # TTY ham yo'q (quvur/CI) — oddiy raqamli menyu (stdin'dan o'qiydi).
     name="$(select_with_numbers "$menu")"
   fi
 
+  # Bekor qilingan/tanlanmagan bo'lsa — jim chiqamiz (ortiqcha "topilmadi" xatosi yo'q).
+  # Eslatma: tanlovchilar `exit 0` ni $(...) ichida bajaradi (faqat qism-jarayonni
+  # to'xtatadi), shuning uchun bo'sh nomni shu yerda bekor sifatida tutamiz.
+  [[ -n "$name" ]] || exit 0
   launch_selected "$rows" "$name"
 }
 
