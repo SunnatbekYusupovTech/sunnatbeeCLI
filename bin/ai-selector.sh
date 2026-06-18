@@ -1003,6 +1003,14 @@ select_with_arrows() {
     for L in "${out[@]}"; do printf '\r\033[K%s\n' "$L" >/dev/tty; done
   }
 
+  # Interaktiv qism: `(( ... )) && ...` chegara tekshiruvlari shart YOLG'ON bo'lsa
+  # 1 qaytaradi (masalan `(( cur < 0 ))` cur>=0 bo'lganda). errexit/ERR-trap yoqiq
+  # bo'lsa bu funksiyani (yoki `_af`/`case` tarmog'ini) "xato" deb tugatadi. Bu
+  # funksiya `$()` subshell'ida ishlaydi, shuning uchun ularni shu yerda o'chirsak
+  # ota-shellga sizmaydi; menyu chegaralarini o'zimiz boshqaramiz.
+  set +e
+  trap - ERR
+
   # Kursorni yashir + avto-o'rashni o'chir (uzun satr ramka balandligini buzmasin).
   printf '\033[?25l\033[?7l' >/dev/tty
   _af
