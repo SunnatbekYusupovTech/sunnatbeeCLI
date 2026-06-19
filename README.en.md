@@ -71,6 +71,7 @@ interactive menu. Works in `bash`, `zsh`, `cmd` and `PowerShell`.
 | 📊 | **Local usage stats** | Counts how many times you launch each agent; the menu and `--list` are sorted by most-used (shown as `· N×`). **Stays on your machine** — nothing is sent anywhere |
 | 🪄 | **fzf installs itself** | Downloads fzf during install (no sudo); falls back to a numeric menu |
 | 🔄 | **Auto-update** | When the project updates, `aidevix` quietly updates itself and shows what changed |
+| 🆕 | **Agents always latest** | Before launching the selected agent, periodically (every ~3h) updates it to the newest version — fixes issues like the old Gemini CLI's *"client no longer supported"* automatically |
 | ♻️ | **`aidevix --update`** | Updates all installed agents with one command |
 | 🩺 | **`aidevix --doctor`** | Checks your environment (node/npm/python/fzf, PATH) |
 | ➕ | **`aidevix --add`** | Adds a new agent interactively (no manual file editing) |
@@ -184,15 +185,14 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 # npm (cross-platform — requires Node.js, and bash for the runtime)
 npm install -g aidevix
 
-# Homebrew (macOS / Linux)
-brew install SUNNATBEE/tap/aidevix
-
 # Scoop (Windows)
 scoop bucket add aidevix https://github.com/SUNNATBEE/sunnatbeeCLI
 scoop install aidevix
 ```
 
-> See [`packaging/`](./packaging) for the Homebrew formula and Scoop manifest.
+> See [`packaging/`](./packaging) for the Scoop manifest. A Homebrew formula is
+> also ready there (`packaging/homebrew/aidevix.rb`), but it only works once a
+> dedicated tap repository is published.
 
 ---
 
@@ -376,7 +376,7 @@ If you installed with `npm install -g aidevix`, the package lives inside
 reminder **on every run** (until you update) when a newer one is available:
 
 ```text
-🔄 A new Aidevix version is available (1.4.0 → 1.5.0)
+🔄 A new Aidevix version is available (1.5.1 → 1.6.0)
    To update, run:
        npm i -g aidevix@latest
    Disable this notice: AIDEVIX_NO_AUTOUPDATE=1
@@ -386,6 +386,23 @@ reminder **on every run** (until you update) when a newer one is available:
 - 🔁 **Keeps reminding:** since npm doesn't auto-update, it nudges you each run until updated.
 - 🙅 **Never auto-installs:** you run `npm i -g aidevix@latest` yourself.
 - ⛔ Disable: `export AIDEVIX_NO_AUTOUPDATE=1` (also off when `CI=1`).
+
+### 🆕 Keeping the agents themselves up to date
+
+The above updates `aidevix` **itself**. On top of that, before launching the
+selected **agent** (Gemini, Claude Code, Codex, ...), `aidevix` periodically
+updates it to the newest version:
+
+- ⏱️ **Throttled:** once every 3 hours per agent (configurable via `AIDEVIX_UPDATE_INTERVAL`).
+- 🎯 **Why:** old installed agents can break — e.g. an old Gemini CLI says
+  *"This client is no longer supported"*. Auto-updating fixes that.
+- 📦 **Only upgradeable ones:** agents installed via `@latest` / `--upgrade` /
+  a `curl` script (brew/cargo are skipped).
+- 🚦 **Non-blocking:** if the update fails, the agent still launches.
+- ⛔ Disable: `export AIDEVIX_NO_AUTOUPDATE=1` (also off when `CI=1`).
+
+> 💡 On a certificate/date error (e.g. *"certificate is not yet valid"*),
+> `aidevix` explains it's not the internet — your **computer's clock is wrong**.
 
 ---
 

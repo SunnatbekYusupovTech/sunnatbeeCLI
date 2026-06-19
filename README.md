@@ -74,6 +74,7 @@ buyruq bilan boshqarish vositasi. `bash`, `zsh`, `cmd` va `PowerShell`'da ishlay
 | 📊 | **Lokal statistika** | Har agent necha marta ishlatilganini sanaydi; menyu va `--list` eng ko'p ishlatilgan bo'yicha tartiblanadi (yonida `· N×`). **Faqat shu kompyuterda** — hech qayoqqa yuborilmaydi |
 | 🪄 | **fzf avtomatik o'rnatiladi** | O'rnatishda fzf'ni o'zi yuklab oladi (sudo kerak emas); bo'lmasa raqamli menyuga o'tadi |
 | 🔄 | **Avtomatik yangilanish** | Loyiha yangilansa — `aidevix` o'zini jim yangilaydi va "nima yangilangani"ni ko'rsatadi (qo'lda hech narsa qilish shart emas) |
+| 🆕 | **Agentlar har doim eng so'nggi** | Tanlangan agentni ishga tushirishdan oldin, vaqti-vaqti bilan (3 soatda bir) eng so'nggi versiyaga yangilab qo'yadi — eski Gemini CLI'dagi *"client no longer supported"* kabi muammolar o'z-o'zidan tuzaladi |
 | ♻️ | **`aidevix --update`** | O'rnatilgan barcha agentlarni bir buyruq bilan yangilaydi |
 | 🩺 | **`aidevix --doctor`** | Muhitni (node/npm/python/fzf, PATH) tekshiradi |
 | ➕ | **`aidevix --add`** | Interaktiv tarzda yangi agent qo'shadi (faylni qo'lda tahrirlamasdan) |
@@ -224,15 +225,14 @@ curl -fsSL https://raw.githubusercontent.com/SUNNATBEE/sunnatbeeCLI/main/bootstr
 # npm (cross-platform — Node.js va ishga tushish uchun bash kerak)
 npm install -g aidevix
 
-# Homebrew (macOS / Linux)
-brew install SUNNATBEE/tap/aidevix
-
 # Scoop (Windows)
 scoop bucket add aidevix https://github.com/SUNNATBEE/sunnatbeeCLI
 scoop install aidevix
 ```
 
-> Manifestlar [`packaging/`](./packaging) papkasida (Homebrew formula + Scoop manifest).
+> Scoop manifesti [`packaging/`](./packaging) papkasida. Homebrew formulasi ham
+> shu yerda tayyor turibdi (`packaging/homebrew/aidevix.rb`), lekin u faqat
+> alohida tap repozitoriyasi ochilganda ishlaydi.
 
 ---
 
@@ -518,7 +518,7 @@ keyingi safar `aidevix` ishga tushganda:
 **har ishga tushganda** eslatma ko'rsatadi (yangilaguningizcha):
 
 ```text
-🔄 Aidevix yangi versiya bor (1.4.0 → 1.5.0)
+🔄 Aidevix yangi versiya bor (1.5.1 → 1.6.0)
    Yangilash uchun terminalga yozing:
        npm i -g aidevix@latest
    Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1
@@ -528,6 +528,23 @@ keyingi safar `aidevix` ishga tushganda:
 - 🔁 **Eslatib turadi:** npm o'zini avtomatik yangilamagani uchun, yangi versiya bo'lsa har safar eslatadi.
 - 🙅 **Avtomatik o'rnatmaydi:** yangilashni siz `npm i -g aidevix@latest` bilan o'zingiz qilasiz.
 - ⛔ O'chirish: `export AIDEVIX_NO_AUTOUPDATE=1` (`CI=1` bo'lsa ham o'chiq).
+
+### 🆕 Agentlarning o'zini eng so'nggi versiyada saqlash
+
+Yuqoridagilar `aidevix`ning **o'zini** yangilaydi. Bundan tashqari, `aidevix`
+tanlangan **agentni** (Gemini, Claude Code, Codex, ...) ishga tushirishdan oldin,
+vaqti-vaqti bilan eng so'nggi versiyaga yangilab qo'yadi:
+
+- ⏱️ **Throttled:** har agent uchun 3 soatda bir marta (sozlash: `AIDEVIX_UPDATE_INTERVAL`).
+- 🎯 **Nega kerak:** eski o'rnatilgan agentlar buzilishi mumkin — masalan eski Gemini CLI
+  *"This client is no longer supported"* deydi. Avtomatik yangilash buni hal qiladi.
+- 📦 **Faqat yangilana oladiganlar:** `@latest` / `--upgrade` / `curl`-skript orqali
+  o'rnatiladigan agentlar (brew/cargo o'tkazib yuboriladi).
+- 🚦 **Bloklamaydi:** yangilash xato bersa ham agent baribir ishga tushadi.
+- ⛔ O'chirish: `export AIDEVIX_NO_AUTOUPDATE=1` (`CI=1` bo'lsa ham o'chiq).
+
+> 💡 Sertifikat/sana xatosi (masalan *"certificate is not yet valid"*) chiqsa,
+> `aidevix` buni internet emas — **kompyuter soati noto'g'ri** ekanini tushuntiradi.
 
 ---
 
