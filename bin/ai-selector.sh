@@ -79,6 +79,12 @@ NPM_PKG="aidevix"                                    # npm registry'dagi paket n
 NPM_LATEST_CACHE="$STATE_DIR/npm_latest"             # eng so'nggi versiya keshi
 NPM_CHECK_STAMP="$STATE_DIR/npm_check"               # tekshirishni throttle vaqti
 
+# --- O'rnatilgan agentlarni avtomatik yangilash ---------------------------
+# Har agent uchun "oxirgi yangilash urinishi" vaqti shu papkada saqlanadi.
+# Throttled (AIDEVIX_UPDATE_INTERVAL) — har ishga tushganda emas, oraliqda bir
+# marta `@latest`/`--upgrade`ga yangilaymiz. O'chirish: AIDEVIX_NO_AUTOUPDATE=1.
+AGENT_UPDATE_DIR="$STATE_DIR/agent_update"           # per-agent yangilash throttle stamp'lari
+
 # Kategoriya ko'rsatilmagan agentlar uchun standart qiymat.
 DEFAULT_CATEGORY="AI"
 
@@ -1137,6 +1143,57 @@ run_menu() {
   launch_selected "$rows" "$name"
 }
 
+# --- Per-agent yangilash stamp'ini yangilash ------------------------------
+# <nom>ni xavfsiz fayl nomiga aylantirib, joriy vaqtni yozadi. Shu orqali keyingi
+# ishga tushishlarda throttle hisoblanadi (xato bo'lsa ham — qayta-qayta urinmaslik).
+touch_agent_update_stamp() {
+  local name="$1" safe now
+  safe="$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_')"
+  now="$(date +%s 2>/dev/null || echo 0)"
+  mkdir -p "$AGENT_UPDATE_DIR" 2>/dev/null || return 0
+  printf '%s\n' "$now" >"$AGENT_UPDATE_DIR/$safe" 2>/dev/null || true
+}
+
+# --- O'rnatilgan agentni eng so'nggi versiyaga avtomatik yangilash ---------
+# ALLAQACHON o'rnatilgan agent eskirib qolishi mumkin (masalan eski Gemini CLI
+# "client no longer supported" deydi). Shu sababli ishga tushirishdan oldin,
+# oraliqda BIR MARTA (throttled), `@latest`/`--upgrade`ga yangilaymiz.
+# Faqat qayta ishga tushirilganda haqiqatan yangilaydigan o'rnatuvchilar uchun
+# (npm @latest, pip --upgrade, curl/wget skript). brew/cargo o'tkazib yuboriladi
+# (qayta `install` ularni yangilamaydi). Xato — bloklamaydi: ishga tushaveramiz.
+# O'chirish: AIDEVIX_NO_AUTOUPDATE=1 yoki CI=1.
+maybe_autoupdate_agent() {
+  local name="$1" binary="$2" install="$3"
+  [[ -n "${AIDEVIX_NO_AUTOUPDATE:-}" || -n "${CI:-}" ]] && return 0
+  [[ -n "$install" ]] || return 0
+  command -v "$binary" >/dev/null 2>&1 || return 0   # o'rnatilmagan — ensure_installed hal qiladi
+  # Qayta ishga tushirilganda haqiqatan "latest"ga olib keladiganlar:
+  case "$install" in
+    *@latest*|*--upgrade*|*curl\ *|*wget\ *) : ;;
+    *) return 0 ;;
+  esac
+
+  local interval now last safe stamp
+  interval="${AIDEVIX_UPDATE_INTERVAL:-10800}"
+  now="$(date +%s 2>/dev/null || echo 0)"
+  safe="$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_')"
+  stamp="$AGENT_UPDATE_DIR/$safe"
+  if [[ -r "$stamp" ]]; then
+    last="$(cat "$stamp" 2>/dev/null || echo 0)"; [[ "$last" =~ ^[0-9]+$ ]] || last=0
+    (( now - last < interval )) && return 0
+  fi
+  # Urinishni OLDIN belgilab qo'yamiz — xato bo'lsa ham keyingi ishga tushishda
+  # qayta-qayta urinmaymiz (oraliq tugaguncha).
+  touch_agent_update_stamp "$name"
+
+  trap - ERR
+  spin_run "$(t "🔄 '%s' eng so'nggi versiyaga yangilanmoqda" "$name")" "$install" || true
+  rm -f "${SPIN_LOG:-}" 2>/dev/null || true
+  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  augment_tool_path                                  # yangi binar joyini PATH'ga
+  return 0
+}
+
 # --- Tanlangan agentni ishga tushirish ------------------------------------
 launch_selected() {
   local rows="$1" name="$2"
@@ -1152,6 +1209,7 @@ launch_selected() {
 
   save_last "$name"
   ensure_installed "$name" "$binary" "$install"
+  maybe_autoupdate_agent "$name" "$binary" "$install"
   maybe_show_auth_note "$name" "$auth" "$url"
   # Statistika: faqat haqiqatan ishga tushganda (o'rnatish muvaffaqiyatli,
   # bekor qilinmagan). Lokal — har doim; global — faqat opt-in yoqilgan bo'lsa.
@@ -1256,6 +1314,28 @@ ensure_installed() {
       die 127 "$(t "'%s' bu OS'da qo'llab-quvvatlanmaydi." "$name")"
     fi
 
+    # TLS/sertifikat "hali yaroqli emas" / "muddati o'tgan" → deyarli har doim
+    # tizim SOATI noto'g'ri (orqada yoki oldinda). Internet emas — soatni tuzatish.
+    if printf '%s' "$log_text" | grep -qiE 'certificate is not yet valid|cert(ificate)? .*not yet valid|not yet valid|certificate has expired|cert(ificate)? .*expired|CERT_NOT_YET_VALID|ERR_CERT_DATE_INVALID|date.*invalid'; then
+      panel "$(t "🕒 '%s' o'rnatilmadi — kompyuter soati noto'g'ri ko'rinadi" "$name")" \
+        "$(t "Yuklab oluvchi xavfsizlik sertifikatini rad etdi: \"sertifikat hali")" \
+        "$(t 'yaroqli emas" (yoki muddati o'\''tgan). Bu — internet muammosi EMAS;')" \
+        "$(t "deyarli har doim kompyuteringizning SANA/VAQTI noto'g'ri o'rnatilgan.")" \
+        "" \
+        "$(t '👉 Yechimi:')" \
+        "$(t '  • Kompyuter sana va vaqtini to'\''g'\''ri o'\''rnating (vaqt mintaqasi ham).')" \
+        "$(t '  • Windows: Sozlamalar → Vaqt va til → "Vaqtni avtomatik o'\''rnatish".')" \
+        "$(t '  • macOS/Linux: vaqtni avtomatik sinxronlashni (NTP) yoqing.')" \
+        "$(t '  • So'\''ng terminalni qayta oching va yana urinib ko'\''ring.')"
+      if [[ -n "$tail_lines" ]]; then
+        printf '%s  %s%s\n' "$C_GRAY" "$(t 'Xato tafsiloti (oxirgi qatorlar):')" "$C_RESET" >&2
+        printf '%s\n' "$tail_lines" | sed 's/^/    /' >&2
+        printf '\n' >&2
+      fi
+      rm -f "${SPIN_LOG:-}" 2>/dev/null || true
+      die 1 "$(t "'%s' o'rnatilmadi — kompyuter soatini tekshiring." "$name")"
+    fi
+
     panel "$(t "❌ '%s' o'rnatishda xatolik yuz berdi" "$name")" \
       "$(t 'Quyidagi buyruq muvaffaqiyatsiz tugadi:')" \
       "    $install" \
@@ -1294,6 +1374,8 @@ ensure_installed() {
     die 127 "$(t "'%s' hali PATH'da ko'rinmayapti — terminalni qayta oching." "$binary")"
   fi
   log_success "$(t "O'rnatildi: %s" "$name")"
+  # Endigina (latest) o'rnatildi — darhol qayta yangilanmasligi uchun stamp'ni yozamiz.
+  touch_agent_update_stamp "$name"
   report_usage_global "$name" "install"
 }
 

@@ -142,6 +142,19 @@ MSG_EN["Agar shunda ham yordam bermasa: \"aidevix --doctor\" buyrug'i muammoni k
 MSG_EN["'%s' hali PATH'da ko'rinmayapti — terminalni qayta oching."]="'%s' isn't visible in PATH yet — reopen your terminal."
 MSG_EN["O'rnatildi: %s"]="Installed: %s"
 
+# --- agentni avtomatik yangilash + sertifikat/soat xatosi -----------------
+MSG_EN["🔄 '%s' eng so'nggi versiyaga yangilanmoqda"]="🔄 Updating '%s' to the latest version"
+MSG_EN["🕒 '%s' o'rnatilmadi — kompyuter soati noto'g'ri ko'rinadi"]="🕒 '%s' wasn't installed — your computer's clock looks wrong"
+MSG_EN["Yuklab oluvchi xavfsizlik sertifikatini rad etdi: \"sertifikat hali"]="The downloader rejected the security certificate: \"certificate is not"
+MSG_EN["yaroqli emas\" (yoki muddati o'tgan). Bu — internet muammosi EMAS;"]="yet valid\" (or has expired). This is NOT an internet problem;"
+MSG_EN["deyarli har doim kompyuteringizning SANA/VAQTI noto'g'ri o'rnatilgan."]="it's almost always your computer's DATE/TIME being set incorrectly."
+MSG_EN["👉 Yechimi:"]="👉 Fix:"
+MSG_EN["  • Kompyuter sana va vaqtini to'g'ri o'rnating (vaqt mintaqasi ham)."]="  • Set your computer's date and time correctly (time zone too)."
+MSG_EN["  • Windows: Sozlamalar → Vaqt va til → \"Vaqtni avtomatik o'rnatish\"."]="  • Windows: Settings → Time & language → \"Set time automatically\"."
+MSG_EN["  • macOS/Linux: vaqtni avtomatik sinxronlashni (NTP) yoqing."]="  • macOS/Linux: enable automatic time sync (NTP)."
+MSG_EN["  • So'ng terminalni qayta oching va yana urinib ko'ring."]="  • Then reopen your terminal and try again."
+MSG_EN["'%s' o'rnatilmadi — kompyuter soatini tekshiring."]="'%s' was not installed — check your computer's clock."
+
 # --- update / doctor / add ------------------------------------------------
 MSG_EN["%s: o'rnatish buyrug'i yo'q — o'tkazib yuborildi."]="%s: no install command — skipped."
 MSG_EN["🔄 %s yangilanmoqda"]="🔄 Updating %s"

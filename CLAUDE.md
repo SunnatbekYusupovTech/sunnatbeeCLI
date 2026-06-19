@@ -43,7 +43,9 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 - `resolve_config` / `build_merged_config` — repo + foydalanuvchi config birlashtirish (repo ustun).
 - `parse_agents` — config → TAB-ajratilgan qatorlar (8 maydon). `build_rows` — unga `status` (✓/✗) qo'shadi.
 - `run_menu` (filter: `free`/`top`), `select_with_fzf`, `select_with_numbers`, `build_menu`, `preview_agent`.
-- `quick_launch` (nomdan agent topish) → `launch_selected` → `ensure_installed` → `maybe_show_auth_note` → `launch_agent` (`exec`).
+- `quick_launch` (nomdan agent topish) → `launch_selected` → `ensure_installed` → `maybe_autoupdate_agent` → `maybe_show_auth_note` → `launch_agent` (`exec`).
+- **Agentni avtomatik yangilash:** `maybe_autoupdate_agent` — ALLAQACHON o'rnatilgan agentni ishga tushirishdan oldin, throttled (`AIDEVIX_UPDATE_INTERVAL`, std 3 soat) BIR MARTA eng so'nggi versiyaga yangilaydi. Faqat qayta `install` qilganda haqiqatan yangilaydiganlar uchun (`@latest`/`--upgrade`/`curl`/`wget`); brew/cargo o'tkazib yuboriladi. Per-agent stamp: `AGENT_UPDATE_DIR` (`touch_agent_update_stamp`). Eski Gemini CLI "client no longer supported" muammosini hal qiladi. Xato — bloklamaydi. O'chirish: `AIDEVIX_NO_AUTOUPDATE=1`/`CI`. `ensure_installed` ham fresh o'rnatishdan keyin stamp yozadi (darhol qayta yangilamaslik uchun).
+- **Sertifikat/soat xatosi:** `ensure_installed` o'rnatish xatosida "certificate is not yet valid / expired" naqshini tutib, internet emas — tizim SOATI noto'g'ri ekanini aniq panelda tushuntiradi (freebuff'dagi muammo).
 - **Til (i18n) UX:** `load_saved_lang` (main'da, preview'dan oldin), `choose_language` (ilk run picker, `LANG_FILE`), `lang_cmd` (`--lang [en|uz]`), `aidevix_set_lang` (i18n.sh). Agent `desc`/`auth` `parse_agents`'da `t()` bilan tarjima qilinadi → menyu/preview/--list to'liq bir tilda. `maybe_show_intro` (BIR MARTA "Aidevix nima/emas" paneli). `ui_spin_start/stop` (common.sh) — menyu tayyorlanayotgandagi fon loaderi. `bin/postinstall.js` — npm'dan keyin "aidevix yozing" yo'riqnomasi.
 - `ensure_installed` — yo'q bo'lsa ruxsat so'rab o'rnatadi; OS-qo'llab-quvvatlamaslik / xato uchun aniq `panel` xabarlari.
 - `should_open_login_link` — 🔑 kalit kerak VA muhitda yo'q bo'lsagina login sahifa ochadi.
@@ -66,8 +68,8 @@ o'rnatilmagan bo'lsa — ruxsat so'rab o'rnatadi. Sof **Bash** loyihasi (build y
 | `AI_PULT_CONFIG` | Aniq config yo'li (test/maxsus). Berilsa — faqat o'sha. |
 | `AIDEVIX_LANG` | Interfeys tili: `uz` yoki `en`. Berilmasa saqlangan tanlov (`--lang`), so'ng `LANG`/`LC_*` locale'idan aniqlanadi; ilk ishga tushishda interaktiv so'raladi. |
 | `AIDEVIX_FZF_PREVIEW` | `1` — fzf preview'ni majburan yoqadi (Windows/MSYS'da std o'chiq, cygwin fork xatosi uchun). |
-| `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanish (git) **va** npm yangilanish eslatmasini o'chiradi. |
-| `AIDEVIX_UPDATE_INTERVAL` | Tekshirish oralig'i (sekund, std 10800). |
+| `AIDEVIX_NO_AUTOUPDATE=1` | Avtomatik yangilanish (git), npm eslatmasi **va** agentni avtomatik yangilash (`maybe_autoupdate_agent`)ni o'chiradi. |
+| `AIDEVIX_UPDATE_INTERVAL` | Tekshirish oralig'i (sekund, std 10800) — aidevix git auto-update, npm tekshiruvi **va** agentni avtomatik yangilash throttle'i. |
 | `CI=1` | Animatsiya + auto_update **+ global statistika** o'chiq. |
 | `NO_COLOR` / `AI_NO_ANIM` | Rang / animatsiyani o'chiradi. |
 | `AIDEVIX_GLOBAL_STATS` | Global statistika opt-in (`1`/`0`) — `GLOBAL_OPTIN_FILE`dan ustun. |
