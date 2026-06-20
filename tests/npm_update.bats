@@ -84,13 +84,15 @@ setup() {
   # fetch_npm_latest tarmoqqa chiqmasligi uchun throttle'ni yangi qilamiz.
   printf '%s\n' "$(date +%s)" > "$NPM_CHECK_STAMP"
 
-  run maybe_npm_update_hint
+  # `</dev/null`: stdin'ni TTY-emas qilamiz → interaktiv auto-update gate'i
+  # ([[ -t 0 ]]) o'tmaydi, faqat passiv eslatma chiqadi (deterministik, osilmaydi).
+  run maybe_npm_update_hint </dev/null
   [ "$status" -eq 0 ]
   [[ "$output" == *"npm i -g aidevix@latest"* ]]
   [[ "$output" == *"999.0.0"* ]]
 
   # Ikkinchi chaqiruv ham eslatadi (agressiv — yangilaguncha har safar).
-  run maybe_npm_update_hint
+  run maybe_npm_update_hint </dev/null
   [ "$status" -eq 0 ]
   [[ "$output" == *"999.0.0"* ]]
 }
@@ -104,4 +106,34 @@ setup() {
   run maybe_npm_update_hint
   [ "$status" -eq 0 ]
   [ -z "$output" ]
+}
+
+# --- auto-update: nointeraktiv holatda npm CHAQIRILMAYDI -------------------
+# Yangi versiya bor bo'lsa ham, stdin TTY emas (bats/quvur/CI) bo'lganda
+# avtomatik yangilashni TAKLIF QILMAYMIZ — passiv eslatma ko'rsatamiz, xolos.
+# Aks holda promptда osilib qolardi yoki userning ixtiyorisiz npm ishga tushardi.
+@test "maybe_npm_update_hint: nointeraktivda npm i -g chaqirmaydi" {
+  unset AIDEVIX_NO_AUTOUPDATE CI
+  PROJECT_ROOT="/usr/lib/node_modules/aidevix"
+  mkdir -p "$STATE_DIR"
+  printf '%s\n' "999.0.0" > "$NPM_LATEST_CACHE"
+  printf '%s\n' "$(date +%s)" > "$NPM_CHECK_STAMP"
+
+  # npm'ni qalbaki stub bilan almashtiramiz: chaqirilsa marker fayl yozadi.
+  local stub="$BATS_TEST_TMPDIR/bin"
+  mkdir -p "$stub"
+  cat > "$stub/npm" <<EOF
+#!/usr/bin/env bash
+echo called > "$BATS_TEST_TMPDIR/npm_called"
+exit 0
+EOF
+  chmod +x "$stub/npm"
+  # `</dev/null`: nointeraktiv → [[ -t 0 ]] yolg'on → gate o'tmaydi.
+  PATH="$stub:$PATH" run maybe_npm_update_hint </dev/null
+
+  [ "$status" -eq 0 ]
+  # npm hech qachon chaqirilmasligi kerak (stdin tty emas).
+  [ ! -f "$BATS_TEST_TMPDIR/npm_called" ]
+  # Passiv eslatma esa ko'rsatilishi kerak.
+  [[ "$output" == *"npm i -g aidevix@latest"* ]]
 }

@@ -112,8 +112,31 @@ cleanup() {
   local f
   for f in ${TMPFILES[@]+"${TMPFILES[@]}"}; do rm -f "$f" 2>/dev/null || true; done
 }
+# crash <buyruq> <qator> — KUTILMAGAN xato (ERR-tutqich) ishlov beruvchisi.
+# Oddiy `die`dan farqi: crashlarning aksariyati ESKI versiyada bo'ladi (masalan
+# v1.5.0 menyu ERR-trap bug'i), shuning uchun xatodan keyin yangilash buyrug'ini
+# KATTA, ko'zga tashlanadigan panel bilan eslatamiz — user darrov chiqib oladi.
+crash() {
+  local cmd="${1:-?}" line="${2:-?}" upd
+  log_error "$(t "Kutilmagan xato: %s (qator: %s)" "$cmd" "$line")"
+  # Yangilash buyrug'i o'rnatish turiga qarab: git checkout bo'lsa --update, aks
+  # holda npm (crash beradigan userlarning aksariyati — npm/Windows).
+  upd="npm i -g ${NPM_PKG}@latest"
+  if command -v is_npm_install >/dev/null 2>&1 && ! is_npm_install && [[ -d "$PROJECT_ROOT/.git" ]]; then
+    upd="aidevix --update"
+  fi
+  panel "$(t "⚠  YANGILANG — bu xato yangi versiyada tuzatilgan bo'lishi mumkin")" \
+    "" \
+    "$(t 'Terminalga shu buyruqni yozing:')" \
+    "" \
+    "    ${C_BOLD}${C_GREEN}${upd}${C_RESET}" \
+    "" \
+    "$(t 'So'\''ngra aidevix ni qayta ishga tushiring.')"
+  exit 1
+}
+
 trap cleanup EXIT
-trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
 
 # --- Yordam matni ---------------------------------------------------------
 usage() {
@@ -460,7 +483,7 @@ choose_language() {
   trap - ERR
   printf '  %s[1/2]%s › ' "$B" "$R" >/dev/tty
   IFS= read -r ans </dev/tty || ans=""
-  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
 
   local chosen=""
   case "$ans" in
@@ -886,7 +909,7 @@ select_with_numbers() {
     printf '%s' "$prompt" >&2
     IFS= read -r choice || choice=""
   fi
-  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
 
   [[ -z "$choice" ]] && { log_info "$(t 'Bekor qilindi.')"; exit 0; }
   if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#names[@]} )); then
@@ -1189,7 +1212,7 @@ maybe_autoupdate_agent() {
   trap - ERR
   spin_run "$(t "🔄 '%s' eng so'nggi versiyaga yangilanmoqda" "$name")" "$install" || true
   rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
   augment_tool_path                                  # yangi binar joyini PATH'ga
   return 0
 }
@@ -1262,7 +1285,7 @@ ensure_installed() {
     printf '%s' "$prompt" >&2
     IFS= read -r ans || ans=""
   fi
-  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
 
   if [[ ! "$ans" =~ ^[Yy]$ ]]; then
     die 127 "$(t "Bekor qilindi. '%s'ni qo'lda o'rnatish uchun: %s" "$name" "$install")"
@@ -1290,7 +1313,7 @@ ensure_installed() {
       tail_lines="$(tail -n 6 "$SPIN_LOG" 2>/dev/null || true)"
       log_text="$(cat "$SPIN_LOG" 2>/dev/null || true)"
     fi
-    trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+    trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
 
     # O'rnatuvchi "bu OS qo'llab-quvvatlanmaydi" desa — adashtiruvchi (internet/
     # sudo/curl) sabablar o'rniga halol, aniq xabar beramiz.
@@ -1356,7 +1379,7 @@ ensure_installed() {
     die 1 "$(t "O'rnatish muvaffaqiyatsiz tugadi: %s." "$name")"
   fi
   rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
 
   # O'rnatish yangi bin papkasi yaratgan bo'lishi mumkin — PATH'ni qayta
   # boyitamiz va hash'ni tozalaymiz, shunda binar joriy sessiyada ko'rinadi.
@@ -1411,7 +1434,7 @@ update_agents() {
       fail=$((fail + 1))
     fi
     rm -f "${SPIN_LOG:-}" 2>/dev/null || true
-    trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+    trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
   done < <(printf '%s\n' "$rows" | tr '\t' '\037')
 
   if [[ "$checked" -eq 0 ]]; then
@@ -1487,7 +1510,7 @@ prompt_tty() {
     printf '%s' "$q" >&2
     IFS= read -r __val || __val=""
   fi
-  trap 'die 1 "$(t "Kutilmagan xato: %s (qator: %s)" "$BASH_COMMAND" "$LINENO")"' ERR
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
   printf -v "$__var" '%s' "$__val"
 }
 
@@ -1640,10 +1663,43 @@ fetch_npm_latest() {
   return 0
 }
 
-# maybe_npm_update_hint — npm o'rnatishda yangi versiya bo'lsa, yangilash
-# buyrug'ini eslatadi. npm paketlari O'ZINI avtomatik yangilamaydi, shuning uchun
-# bu — asosiy tarqalish vositasi: yangi versiya bo'lsa HAR ISHGA TUSHGANDA
-# ko'rsatamiz (standart update-notifier xulqi), foydalanuvchi yangilaguncha.
+# npm_autoupdate_apply <latest> [orig-args...] — yangi versiyaga yangilashni
+# TAKLIF qiladi. Foydalanuvchi tasdiqlasa (std = ha) `npm i -g pkg@latest` qilib,
+# joriy jarayonni YANGI versiya bilan qayta ishga tushiradi (exec). Shu yo'l bilan
+# eski/crash beradigan versiyadagi userni avtomatik chiqarib olamiz. Rad etsa yoki
+# o'rnatish muvaffaqiyatsiz bo'lsa — passiv eslatmaga qaytish uchun 1 qaytaradi.
+npm_autoupdate_apply() {
+  local latest="$1"; shift
+  local ans="" q
+  q="$(t '🔄 Yangi versiya bor (%s → %s). Hozir avtomatik yangilaymizmi? [Y/n] ' "$AIDEVIX_VERSION" "$latest")"
+  # TTY o'qishidan oldin ERR-tutqichni vaqtincha o'chiramiz (prompt_tty kabi).
+  trap - ERR
+  if { : >/dev/tty; } 2>/dev/null; then
+    printf '%s' "$q" >/dev/tty
+    IFS= read -r ans </dev/tty || ans=""
+  else
+    printf '%s' "$q" >&2
+    IFS= read -r ans || ans=""
+  fi
+  trap 'crash "$BASH_COMMAND" "$LINENO"' ERR
+  case "$ans" in
+    ''|[Yy]|[Yy][Ee][Ss]|[Hh]|[Hh][Aa]) ;;     # ha / yes / bo'sh = yangilaymiz
+    *) return 1 ;;                              # rad etildi — passiv eslatmaga qaytadi
+  esac
+  log_info "$(t 'Yangilanmoqda: npm i -g %s@latest …' "$NPM_PKG")"
+  if npm i -g "$NPM_PKG@latest" </dev/null; then
+    log_ok "$(t 'Yangilandi (%s). Qayta ishga tushmoqda…' "$latest")"
+    exec "$0" "$@"                              # yangilangan versiya bilan qayta start
+  fi
+  log_warn "$(t "Avtomatik yangilab bo'lmadi. Qo'lda: npm i -g %s@latest" "$NPM_PKG")"
+  return 1
+}
+
+# maybe_npm_update_hint — npm o'rnatishda yangi versiya bo'lsa: interaktiv TTY +
+# npm bor bo'lsa YANGILASHNI TAKLIF qiladi (npm_autoupdate_apply), aks holda (yoki
+# rad etilsa) passiv eslatma ko'rsatadi. npm paketlari O'ZINI avtomatik
+# yangilamaydi, shuning uchun bu — asosiy tarqalish vositasi: yangi versiya bo'lsa
+# HAR ISHGA TUSHGANDA ko'rsatamiz, foydalanuvchi yangilaguncha.
 # Majburlamaydi. O'chirish: AIDEVIX_NO_AUTOUPDATE=1 (yoki CI).
 maybe_npm_update_hint() {
   [[ -n "${AIDEVIX_NO_AUTOUPDATE:-}" || -n "${CI:-}" ]] && return 0
@@ -1653,6 +1709,15 @@ maybe_npm_update_hint() {
   local latest; latest="$(cat "$NPM_LATEST_CACHE" 2>/dev/null || true)"
   [[ "$latest" =~ ^[0-9]+\.[0-9]+ ]] || return 0
   version_gt "$latest" "$AIDEVIX_VERSION" || return 0
+
+  # Interaktiv sessiya + npm bor → yangilashni TAKLIF qilamiz (tasdiqlasa exec).
+  # Tasdiqlanib yangilansa, apply qaytmaydi (exec). Rad etilsa 1 qaytaradi →
+  # pastdagi passiv eslatmaga tushadi. `[[ -t 0 ]]` SHART: quvur/CI/bats kabi
+  # nointeraktiv holatda taklif qilmaymiz (aks holda promptда osilib qoladi).
+  if command -v npm >/dev/null 2>&1 && [[ -t 0 ]] && { : >/dev/tty; } 2>/dev/null; then
+    npm_autoupdate_apply "$latest" "$@" && return 0
+  fi
+
   panel "$(t '🔄 Aidevix yangi versiya bor (%s → %s)' "$AIDEVIX_VERSION" "$latest")" \
     "$(t 'Yangilash uchun terminalga yozing:')" \
     "    npm i -g $NPM_PKG@latest" \
@@ -1675,7 +1740,7 @@ main() {
   # Avtomatik yangilanish — tez/meta buyruqlar uchun o'tkazib yuboramiz.
   case "${1:-}" in
     -h|--help|-v|--version|-s|--stats|--lang|-L) : ;;
-    *)                                           auto_update "$@"; maybe_npm_update_hint ;;
+    *)                                           auto_update "$@"; maybe_npm_update_hint "$@" ;;
   esac
 
   case "${1:-}" in

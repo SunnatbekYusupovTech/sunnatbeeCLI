@@ -159,6 +159,9 @@ MSG_EN["'%s' o'rnatilmadi — kompyuter soatini tekshiring."]="'%s' was not inst
 MSG_EN["%s: o'rnatish buyrug'i yo'q — o'tkazib yuborildi."]="%s: no install command — skipped."
 MSG_EN["🔄 %s yangilanmoqda"]="🔄 Updating %s"
 MSG_EN["Kutilmagan xato: %s (qator: %s)"]="Unexpected error: %s (line: %s)"
+MSG_EN["⚠  YANGILANG — bu xato yangi versiyada tuzatilgan bo'lishi mumkin"]="⚠  UPDATE — this error may already be fixed in a newer version"
+MSG_EN["Terminalga shu buyruqni yozing:"]="Run this command in your terminal:"
+MSG_EN["So'ngra aidevix ni qayta ishga tushiring."]="Then start aidevix again."
 MSG_EN["O'rnatilgan agent topilmadi — yangilash uchun avval agent o'rnating."]="No installed agents found — install an agent first to update."
 MSG_EN["Yangilash tugadi: %s ta muvaffaqiyatli, %s ta xato (jami %s)."]="Update finished: %s succeeded, %s failed (total %s)."
 MSG_EN["Aidevix — Tashxis"]="Aidevix — Doctor"
@@ -199,6 +202,10 @@ MSG_EN["! Avtomatik yangilab bo'lmadi — keyinroq qayta urinadi."]="! Couldn't 
 MSG_EN["🔄 Aidevix yangi versiya bor (%s → %s)"]="🔄 A new Aidevix version is available (%s → %s)"
 MSG_EN["Yangilash uchun terminalga yozing:"]="To update, run in your terminal:"
 MSG_EN["Eslatmani o'chirish: AIDEVIX_NO_AUTOUPDATE=1"]="Disable this notice: AIDEVIX_NO_AUTOUPDATE=1"
+MSG_EN["🔄 Yangi versiya bor (%s → %s). Hozir avtomatik yangilaymizmi? [Y/n] "]="🔄 A new version is available (%s → %s). Auto-update now? [Y/n] "
+MSG_EN["Yangilanmoqda: npm i -g %s@latest …"]="Updating: npm i -g %s@latest …"
+MSG_EN["Yangilandi (%s). Qayta ishga tushmoqda…"]="Updated (%s). Restarting…"
+MSG_EN["Avtomatik yangilab bo'lmadi. Qo'lda: npm i -g %s@latest"]="Auto-update failed. Manually: npm i -g %s@latest"
 
 # --- startup loader / intro -----------------------------------------------
 MSG_EN["Agentlar tekshirilmoqda…"]="Checking agents…"
