@@ -47,6 +47,21 @@ setup() {
   [[ "$output" == *"✗"* ]]
 }
 
+@test "--list: HOLAT ustuni emoji bo'lsa ham GURUH ustunini tekis saqlaydi" {
+  # ✓/✗ belgisi 3 bayt, 1 ustun — `%-Ns` baytlab to'ldirgani uchun emoji'li
+  # qatorlar siljib qolmasligi kerak. Alpha (✓, Coding) va Bravo (✗, Local)
+  # da kategoriya bir xil ustundan boshlanishi shart (regressiya testi).
+  run_cli --list
+  [ "$status" -eq 0 ]
+  local alpha bravo pa pb
+  alpha="$(printf '%s\n' "$output" | grep '^Alpha CLI')"
+  bravo="$(printf '%s\n' "$output" | grep '^Bravo CLI')"
+  # Kategoriyagacha bo'lgan prefiksning kenglik (ustun) o'rni — emoji'siz, ASCII.
+  pa="${alpha%%Coding*}"
+  pb="${bravo%%Local*}"
+  [ "${#pa}" -eq "${#pb}" ]
+}
+
 # --- Noto'g'ri argumentlar ------------------------------------------------
 @test "noma'lum tanlov (--badflag) → exit 2" {
   run_cli --badflag

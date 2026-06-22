@@ -725,10 +725,15 @@ list_agents() {
   local statsfile="$STATS_FILE"; [[ -r "$statsfile" ]] || statsfile=/dev/null
   printf '\n%s%-18s %-14s %-9s %-7s %-34s %s%s\n' "$C_BOLD" "$(t AGENT)" "$(t HOLAT)" "$(t GURUH)" "$(t MARTA)" "$(t IZOH)" "$(t LOGIN)" "$C_RESET"
   printf '%s\n' "-------------------------------------------------------------------------------------------------"
-  local name desc binary command install category status auth url count color
+  local name desc binary command install category status auth url count color icon label
   while IFS=$'\037' read -r name desc binary command install category status auth url count; do
     if [[ "$status" == *"✓"* ]]; then color="$C_GREEN"; else color="$C_RED"; fi
-    printf '%-18s %b%-14s%b %-9s %-7s %-34s %s\n' "$name" "$color" "$status" "$C_RESET" "$category" "${count}×" "$desc" "$auth"
+    # ✓/✗ belgisi 3 bayt (1 ustun) — `%-Ns` baytlab to'ldirgani uchun emoji'ni
+    # to'ldirish maydonidan TASHQARIDA chiqaramiz; faqat ASCII holat matnini
+    # to'ldiramiz (bayt=ustun → ustunlar to'g'ri tekislanadi). Qarang preview/menu.
+    icon="${status%% *}"   # ✓ yoki ✗
+    label="${status#* }"   # holat matni (o'rnatilgan/yo'q/installed/missing)
+    printf '%-18s %b%s %-12s%b %-9s %-7s %-34s %s\n' "$name" "$color" "$icon" "$label" "$C_RESET" "$category" "${count}×" "$desc" "$auth"
   done < <(
     build_rows "$config" | awk -F'\t' -v sf="$statsfile" '
       BEGIN { while ((getline line < sf) > 0) { m = split(line, a, "\t"); if (m >= 2) cnt[a[2]] = a[1] } }
