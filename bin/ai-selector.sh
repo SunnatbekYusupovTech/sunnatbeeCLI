@@ -962,7 +962,13 @@ select_with_arrows() {
   local FH=$(( 2 + page + 1 + 1 + DET + 1 ))     # ramka balandligi (o'zgarmas): header2 + page + count1 + hr1 + DET + footer1
 
   # ESC ketma-ketligi uchun timeout: eski bash (3.x) kasr -t qabul qilmaydi.
+  # Windows (MINGW/MSYS/CYGWIN) konsolida ESC'dan keyingi baytlar (`[A` ...) sezilarli
+  # kechikib keladi — 20 ms juda qisqa, strelkalar bo'sh `seq` → "cancel" deb o'qilib
+  # menyu yopilib qolardi. Shu platformalarda oraliqni oshiramiz.
   local esctmo=0.02; (( ${BASH_VERSINFO[0]:-4} < 4 )) && esctmo=1
+  case "$(uname -s 2>/dev/null || echo unknown)" in
+    MINGW*|MSYS*|CYGWIN*) esctmo=0.4 ;;
+  esac
 
   local cur=0 topv=0 query="" first=1
   local -a vis=()
