@@ -1055,25 +1055,38 @@ select_with_arrows() {
   printf '\033[?25l\033[?7l' >/dev/tty
   _af
 
-  local key seq action selected="" cancelled=0 _t
+  local key action selected="" cancelled=0 _t c1 c2
   while :; do
     _ar
     IFS= read -rsn1 key </dev/tty || { cancelled=1; break; }
     action="char"
     if [[ "$key" == $'\033' ]]; then
-      IFS= read -rsn2 -t "$esctmo" seq </dev/tty || seq=""
-      case "$seq" in
-        '['A|OA) action=up ;;
-        '['B|OB) action=down ;;
-        '['C|OC) action=right ;;
-        '['D|OD) action=left ;;
-        '['H|OH) action=home ;;
-        '['F|OF) action=end ;;
-        '['5)    IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgup ;;
-        '['6)    IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgdn ;;
-        '')      action=cancel ;;
-        *)       action=cancel ;;
-      esac
+      # ESC keldi: bu YOLG'IZ ESC (bekor) yoki strelka/funksional klavishaning
+      # boshlanishi (`\033[A` ...) bo'lishi mumkin. Qolgan baytlarni BAYTMA-BAYT,
+      # har biriga ALOHIDA timeout bilan o'qiymiz. Avval `read -rsn2` bir
+      # timeout oynasida IKKALA baytni kutardi; Windows (MINGW/MSYS) konsolida
+      # baytlar kechikib/bo'lak-bo'lak kelgani uchun read timeout bo'lib qisman
+      # natijani TASHLAB yuborardi → har strelka "bekor" deb o'qilib menyu
+      # yopilib qolardi. Baytma-bayt o'qish bu poygani yo'qotadi.
+      c1=""; IFS= read -rsn1 -t "$esctmo" c1 </dev/tty || true
+      if [[ -z "$c1" ]]; then
+        action=cancel                       # haqiqiy yolg'iz ESC
+      elif [[ "$c1" == '[' || "$c1" == 'O' ]]; then
+        c2=""; IFS= read -rsn1 -t "$esctmo" c2 </dev/tty || true
+        case "$c2" in
+          A) action=up ;;
+          B) action=down ;;
+          C) action=right ;;
+          D) action=left ;;
+          H) action=home ;;
+          F) action=end ;;
+          5) IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgup ;;
+          6) IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgdn ;;
+          *) action=cancel ;;
+        esac
+      else
+        action=cancel
+      fi
     elif [[ -z "$key" ]]; then action=enter
     elif [[ "$key" == $'\177' || "$key" == $'\b' ]]; then action=bs
     elif [[ "$key" == $'\t' ]]; then action=down

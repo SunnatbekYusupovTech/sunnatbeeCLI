@@ -73,6 +73,33 @@ _arrows_body() {
   [[ "$output" == *"aidevix --update"* ]]
 }
 
+# --- Strelka navigatsiyasi: ESC ketma-ketligi baytma-bayt o'qiladi --------
+# Bug (Windows): `read -rsn2 -t "$esctmo" seq` IKKALA seq baytini bitta timeout
+# oynasida kutardi. MINGW/MSYS konsolida baytlar bo'lak-bo'lak kelgani uchun read
+# timeout bo'lib qisman natija TASHLANARDI → har strelka "cancel" deb o'qilib menyu
+# yopilib qolardi. Fix: ESC'dan keyin har baytni ALOHIDA `read -rsn1 -t` bilan o'qish.
+@test "select_with_arrows: ESC ketma-ketligini fragile 'read -rsn2' bilan o'qimaydi" {
+  local n
+  # Izoh qatorlarini (#...) chiqarib tashlab, faqat KOD'da qidiramiz.
+  n="$(_arrows_body | grep -vE '^\s*#' | grep -cE 'read -rsn2' || true)"
+  [ "$n" -eq 0 ]
+}
+
+@test "select_with_arrows: ESC'dan keyin baytma-bayt 'read -rsn1 -t' o'qiydi" {
+  # ESC tarmog'ida kamida ikkita bir-baytli timeoutli o'qish bo'lishi shart (c1, c2).
+  local n
+  n="$(_arrows_body | grep -cE 'read -rsn1 -t "\$esctmo"')"
+  [ "$n" -ge 2 ]
+}
+
+@test "select_with_arrows: strelka baytlari up/down/left/right ga bog'lanadi" {
+  local body; body="$(_arrows_body)"
+  printf '%s\n' "$body" | grep -qE '^\s*A\) action=up'
+  printf '%s\n' "$body" | grep -qE '^\s*B\) action=down'
+  printf '%s\n' "$body" | grep -qE '^\s*C\) action=right'
+  printf '%s\n' "$body" | grep -qE '^\s*D\) action=left'
+}
+
 @test "bin/lib: himoyalanmagan standalone (( )) yo'q (ERR-trap tuzog'i)" {
   # Statement-pozitsiyadagi `(( ifoda ))` set -e ostida XAVFLI: ifoda false bo'lsa
   # 1 qaytaradi → die. Har bunday qator `&&` yoki `||` bilan o'ralgan bo'lishi
