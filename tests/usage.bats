@@ -64,6 +64,18 @@ setup() {
   [[ "$first" == *"2×"* ]]
 }
 
+@test "build_menu: oxirgi ishlatilgan agent hammadan tepada (↩ belgisi bilan)" {
+  export AI_PULT_CONFIG="$FIXTURE_CONFIG"
+  record_usage "Alpha CLI"
+  record_usage "Alpha CLI"       # boshqa agent ko'proq ishlatilgan bo'lsa ham
+  local rows; rows="$(build_rows "$FIXTURE_CONFIG")"
+  run build_menu "$rows" "$STATS_FILE" "" "Charlie"
+  [ "$status" -eq 0 ]
+  local first; first="$(printf '%s\n' "$output" | head -1)"
+  [[ "$first" == *"Charlie"* ]]
+  [[ "$first" == *"↩"* ]]
+}
+
 @test "build_menu: statistikasiz config tartibini saqlaydi (barqaror)" {
   export AI_PULT_CONFIG="$FIXTURE_CONFIG"
   local rows; rows="$(build_rows "$FIXTURE_CONFIG")"

@@ -73,23 +73,41 @@ _arrows_body() {
   [[ "$output" == *"aidevix --update"* ]]
 }
 
-# --- Strelka navigatsiyasi: ESC ketma-ketligi baytma-bayt o'qiladi --------
-# Bug (Windows): `read -rsn2 -t "$esctmo" seq` IKKALA seq baytini bitta timeout
-# oynasida kutardi. MINGW/MSYS konsolida baytlar bo'lak-bo'lak kelgani uchun read
-# timeout bo'lib qisman natija TASHLANARDI → har strelka "cancel" deb o'qilib menyu
-# yopilib qolardi. Fix: ESC'dan keyin har baytni ALOHIDA `read -rsn1 -t` bilan o'qish.
-@test "select_with_arrows: ESC ketma-ketligini fragile 'read -rsn2' bilan o'qimaydi" {
+# --- Strelka navigatsiyasi: baytlar termios (stty+dd) orqali o'qiladi -------
+# Bug (Windows): bash `read -t` select()/poll() ga tayanadi; MINGW/MSYS konsol
+# deskriptorida select ISHONCHSIZ — timeout darhol bo'sh qaytib, ESC'dan keyingi
+# `[A` baytlari "kelmadi" deb hisoblanardi → har strelka "cancel" deb o'qilib menyu
+# yopilib qolardi (baytma-bayt `read -rsn1 -t` ham shu sababdan yetarli bo'lmadi).
+# Fix: bash `read` o'rniga stty min/time (VTIME) + dd — kernel read() VTIME'ni
+# haqiqatan kutadi, har joyda (Linux/mac/MSYS) ishonchli ishlaydi.
+@test "select_with_arrows: kalit o'qishda fragile bash 'read -t' ishlatmaydi" {
   local n
   # Izoh qatorlarini (#...) chiqarib tashlab, faqat KOD'da qidiramiz.
-  n="$(_arrows_body | grep -vE '^\s*#' | grep -cE 'read -rsn2' || true)"
+  n="$(_arrows_body | grep -vE '^\s*#' | grep -cE 'read -rsn?[0-9]* -t' || true)"
   [ "$n" -eq 0 ]
 }
 
-@test "select_with_arrows: ESC'dan keyin baytma-bayt 'read -rsn1 -t' o'qiydi" {
-  # ESC tarmog'ida kamida ikkita bir-baytli timeoutli o'qish bo'lishi shart (c1, c2).
+@test "select_with_arrows: baytlarni stty min/time + dd (termios) bilan o'qiydi" {
+  local body; body="$(_arrows_body)"
+  # _rb yordamchisi: dd bilan bitta bayt o'qiydi.
+  printf '%s\n' "$body" | grep -qE 'dd bs=1 count=1'
+  # Timeout TTY drayveri orqali (stty min 0 time ...).
+  printf '%s\n' "$body" | grep -qE 'stty min 0 time'
+  # Bloklash rejimi (stty min 1 time 0) ham o'rnatiladi.
+  printf '%s\n' "$body" | grep -qE 'stty .* min 1 time 0|stty min 1 time 0'
+}
+
+@test "select_with_arrows: ESC tarmog'ida kamida ikki marta VTIME o'qish (c1,c2)" {
+  # ESC'dan keyin c1 va c2 baytlari escds (deci-soniya) timeout bilan o'qiladi.
   local n
-  n="$(_arrows_body | grep -cE 'read -rsn1 -t "\$esctmo"')"
+  n="$(_arrows_body | grep -cE '_rb [a-z0-9_]+ "\$escds"')"
   [ "$n" -ge 2 ]
+}
+
+@test "select_with_arrows: chiqishda TTY holatini tiklaydi (stty restore + EXIT trap)" {
+  local body; body="$(_arrows_body)"
+  printf '%s\n' "$body" | grep -qE 'stty -g'                 # eski holatni saqlaydi
+  printf '%s\n' "$body" | grep -qE "trap '.*stty .*' EXIT"   # EXIT'da tiklaydi
 }
 
 @test "select_with_arrows: strelka baytlari up/down/left/right ga bog'lanadi" {
@@ -98,6 +116,34 @@ _arrows_body() {
   printf '%s\n' "$body" | grep -qE '^\s*B\) action=down'
   printf '%s\n' "$body" | grep -qE '^\s*C\) action=right'
   printf '%s\n' "$body" | grep -qE '^\s*D\) action=left'
+}
+
+# --- Scroll/g'ildirak va notanish klavishlar tuzatishlari -------------------
+@test "select_with_arrows: alt-screen + alternate-scroll (g'ildirak bilan scroll)" {
+  local body; body="$(_arrows_body)"
+  printf '%s\n' "$body" | grep -q '1049h'    # alt-screen'ga kirish
+  printf '%s\n' "$body" | grep -q '1007h'    # g'ildirak → ↑/↓ strelka
+  printf '%s\n' "$body" | grep -q '1049l'    # chiqishda tiklash
+}
+
+@test "select_with_arrows: notanish CSI ketma-ketlik menyuni YOPMAYDI (skip)" {
+  local body; body="$(_arrows_body)"
+  printf '%s\n' "$body" | grep -qE 'action=skip'
+  # Eski xulq (har notanish c2 → cancel) qaytib kelmaganini tekshiramiz.
+  ! printf '%s\n' "$body" | grep -vE '^\s*#' | grep -qE '^\s*\*\) action=cancel'
+}
+
+@test "select_with_arrows: klavish tsiklida awk chaqirilmaydi (Windows fork sekinligi)" {
+  # Datafile bir marta oldindan o'qiladi; har siljishda awk/subshell ochish
+  # MSYS'da bitta strelkani soniyagacha cho'zib, "scroll ishlamayapti"ga sabab edi.
+  local n
+  n="$(_arrows_body | grep -vE '^\s*#' | grep -c 'awk ' || true)"
+  [ "$n" -eq 0 ]
+}
+
+@test "select_with_fzf: fzf xatosida die emas — ichki menyuga fallback (rc=3)" {
+  awk '/^select_with_fzf\(\) \{/{f=1} f{print} f&&/^\}$/{exit}' "$SELECTOR" | grep -q 'return 3'
+  grep -q "fzf ishga tushmadi" "$SELECTOR"
 }
 
 @test "bin/lib: himoyalanmagan standalone (( )) yo'q (ERR-trap tuzog'i)" {

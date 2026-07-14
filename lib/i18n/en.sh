@@ -277,5 +277,9 @@ MSG_EN["🔑 provayder API kaliti (lokal modellar ham)"]="🔑 provider API key 
 MSG_EN["🔑 provayder API kaliti (OpenAI/Anthropic/OpenRouter)"]="🔑 provider API key (OpenAI/Anthropic/OpenRouter)"
 MSG_EN["🔑 provayder API kaliti (OpenAI/lokal)"]="🔑 provider API key (OpenAI/local)"
 
+# --- menyu (fzf fallback / oxirgi agent belgisi) ---------------------------
+MSG_EN["fzf ishga tushmadi — ichki menyu ishlatilmoqda."]="fzf failed to start — using the built-in menu."
+MSG_EN["oxirgi"]="last"
+
 # --- dispatch -------------------------------------------------------------
 MSG_EN["Noma'lum tanlov: %s"]="Unknown option: %s"

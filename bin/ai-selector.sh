@@ -59,6 +59,11 @@ SEEN_AUTH_FILE="$STATE_DIR/seen_auth"
 INTRO_FILE="$STATE_DIR/seen_intro"
 # Foydalanuvchi tanlagan interfeys tili ("uz"/"en") — ilk ishga tushishda so'raladi.
 LANG_FILE="$STATE_DIR/lang"
+# O'rnatilgan agent binarlari topilgan QO'SHIMCHA papkalar keshi (har qatorda bitta
+# papka). Ba'zi o'rnatuvchilar binarni o'z papkasiga qo'yib PATH'ni faqat rc faylga
+# yozadi — keyingi aidevix sessiyalari uni ko'rmay har safar qayta "o'rnatish"
+# so'rardi. Shu kesh tufayli bir marta topilgan papka doim PATH'ga qo'shiladi.
+BIN_DIR_CACHE="$STATE_DIR/bin_dirs"
 
 # --- Global statistika (OPT-IN — standart o'CHIQ) -------------------------
 # Foydalanuvchi YOQSAGINA (aidevix --stats on) ishlaydi. Yoqilganda: agent
@@ -107,8 +112,9 @@ TMPFILES=()
 cleanup() {
   ui_spin_stop 2>/dev/null || true
   show_cursor
-  # Ichki menyu avto-o'rashni o'chirgan bo'lishi mumkin — har ehtimolga tiklaymiz.
-  [[ "${UI_TTY:-0}" -eq 1 ]] && printf '\033[?7h' >&2 2>/dev/null || true
+  # Ichki menyu avto-o'rash/alt-screen'ni o'zgartirgan bo'lishi mumkin — har
+  # ehtimolga tiklaymiz (alt-screen'da bo'lmasak \033[?1049l zararsiz no-op).
+  [[ "${UI_TTY:-0}" -eq 1 ]] && printf '\033[?7h\033[?1007l\033[?1049l' >&2 2>/dev/null || true
   local f
   for f in ${TMPFILES[@]+"${TMPFILES[@]}"}; do rm -f "$f" 2>/dev/null || true; done
 }
@@ -273,11 +279,35 @@ trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 detect_install_tool() {
   local install="$1"
   if   [[ "$install" == *"npm "* ]];     then echo "npm"
-  elif [[ "$install" == *"pip"* || "$install" == *"python3 "* ]]; then echo "python3"
+  elif [[ "$install" == *"python3 "* ]]; then echo "python3"
+  elif [[ "$install" == *"python "* ]];  then echo "python"
+  elif [[ "$install" == *"pip"* ]];      then echo "python3"
   elif [[ "$install" == *"brew "* ]];    then echo "brew"
   elif [[ "$install" == *"curl "* ]];    then echo "curl"
   elif [[ "$install" == *"wget "* ]];    then echo "wget"
   else echo ""; fi
+}
+
+# resolve_install_cmd <install> — o'rnatish buyrug'ini joriy muhitga moslaydi.
+# Windows'da `python3` ko'pincha Microsoft Store STUB'i (WindowsApps ichidagi
+# 0-baytli alias) — u pip'ni ishga tushirmaydi, faqat Store'ni taklif qiladi.
+# python3 haqiqatan ishlamasa-yu haqiqiy `python` bo'lsa, buyruqdagi python3'ni
+# python'ga almashtiramiz. Boshqa buyruqlar o'zgarishsiz qaytadi.
+resolve_install_cmd() {
+  local install="$1"
+  case "$install" in
+    *python3\ *) : ;;
+    *) printf '%s' "$install"; return 0 ;;
+  esac
+  # python3 bor va HAQIQATAN ishlaydi (stub `-c` bilan xato qaytaradi) — tegmaymiz.
+  if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys' >/dev/null 2>&1; then
+    printf '%s' "$install"; return 0
+  fi
+  # python3 yo'q/stub, lekin `python` ishlaydi → almashtiramiz.
+  if command -v python >/dev/null 2>&1 && python -c 'import sys' >/dev/null 2>&1; then
+    printf '%s' "${install//python3 /python }"; return 0
+  fi
+  printf '%s' "$install"
 }
 
 # --- Oxirgi tanlovni eslab qolish -----------------------------------------
@@ -631,11 +661,39 @@ augment_tool_path() {
       dirs+=("$prefix/bin" "$prefix")
     fi
   fi
-  if command -v python3 >/dev/null 2>&1; then
-    userbase="$(python3 -m site --user-base 2>/dev/null || true)"
-    [[ -n "$userbase" ]] && dirs+=("$userbase/bin" "$userbase/Scripts")
+  # python3 Windows'da ko'pincha Store stub'i (user-base bermaydi) — haqiqiy
+  # natija chiqquncha python3, so'ng python bilan urinamiz.
+  local py
+  for py in python3 python; do
+    command -v "$py" >/dev/null 2>&1 || continue
+    userbase="$("$py" -m site --user-base 2>/dev/null || true)"
+    [[ -n "$userbase" ]] && break
+  done
+  if [[ -n "${userbase:-}" ]]; then
+    # Windows-shakl yo'lni avval POSIX'ga o'giramiz — pastdagi glob ishlashi uchun.
+    case "$userbase" in
+      [A-Za-z]:[\\/]*|*\\*)
+        command -v cygpath >/dev/null 2>&1 && \
+          userbase="$(cygpath -u "$userbase" 2>/dev/null || printf '%s' "$userbase")"
+        ;;
+    esac
+    dirs+=("$userbase/bin" "$userbase/Scripts")
+    # Windows'da pip --user skriptlari VERSIYALI papkaga tushadi:
+    # %APPDATA%\Python\Python3XX\Scripts — usiz pip agentlari hech qachon
+    # topilmay, har safar qayta o'rnatish so'ralardi.
+    local pd
+    for pd in "$userbase"/Python*/Scripts; do
+      [[ -d "$pd" ]] && dirs+=("$pd")
+    done
   fi
   dirs+=("$HOME/.local/bin" "$HOME/bin" "$HOME/.cargo/bin" "$HOME/AppData/Roaming/npm")
+
+  # Oldingi sessiyalarda topilgan binar papkalari (locate_binary keshi).
+  if [[ -r "$BIN_DIR_CACHE" ]]; then
+    while IFS= read -r d; do
+      [[ -n "$d" && -d "$d" ]] && dirs+=("$d")
+    done <"$BIN_DIR_CACHE"
+  fi
 
   for d in "${dirs[@]}"; do
     # Windows-shakldagi yo'l (masalan `C:\Users\...` — npm config get prefix
@@ -657,6 +715,48 @@ augment_tool_path() {
   done
   export PATH
   hash -r 2>/dev/null || true
+}
+
+# --- O'rnatilgan binarni PATH tashqarisidan qidirish + eslab qolish --------
+# record_bin_dir <papka> — binar papkasini doimiy keshga qo'shadi (takrorsiz).
+# Keyingi sessiyalarda augment_tool_path bu papkalarni avtomatik PATH'ga qo'shadi.
+record_bin_dir() {
+  local d="$1"
+  [[ -n "$d" && -d "$d" ]] || return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+  if grep -qxF "$d" "$BIN_DIR_CACHE" 2>/dev/null; then return 0; fi
+  printf '%s\n' "$d" >>"$BIN_DIR_CACHE" 2>/dev/null || true
+}
+
+# locate_binary <binary> — PATH'da ko'rinmayotgan binarni MA'LUM o'rnatish
+# joylaridan qidiradi (o'rnatuvchi PATH'ni faqat rc faylga yozgan holat).
+# Topsa: papkani joriy PATH'ga qo'shadi, keshlaydi va 0 qaytaradi. Shu tufayli
+# "o'rnatilgan, lekin har safar qayta o'rnatish so'raydi" muammosi yo'qoladi.
+locate_binary() {
+  local binary="$1" d cand
+  [[ -n "$binary" ]] || return 1
+  local -a cands=(
+    "$HOME/.local/bin" "$HOME/bin" "$HOME/.cargo/bin"
+    "$HOME/.$binary/bin" "$HOME/.$binary"
+    /usr/local/bin /opt/homebrew/bin
+  )
+  # Windows pip --user skriptlari (versiyali papka).
+  for d in "$HOME/AppData/Roaming/Python"/Python*/Scripts; do
+    [[ -d "$d" ]] && cands+=("$d")
+  done
+  for d in "${cands[@]}"; do
+    [[ -d "$d" ]] || continue
+    for cand in "$d/$binary" "$d/$binary.exe" "$d/$binary.cmd"; do
+      [[ -x "$cand" ]] || continue
+      if [[ ":$PATH:" != *":$d:"* ]]; then
+        PATH="$d:$PATH"; export PATH
+      fi
+      hash -r 2>/dev/null || true
+      record_bin_dir "$d"
+      return 0
+    done
+  done
+  return 1
 }
 
 # --- Konfiguratsiyani o'qib, TAB bilan ajratilgan qatorlar chiqarish -------
@@ -789,12 +889,15 @@ preview_agent() {
 # Qatorlar LOKAL ishlatish sanog'i bo'yicha KAMAYISH tartibida; teng bo'lsa
 # config tartibi saqlanadi. Har agent yonida "· N×" (lokal) va — global
 # statistika yoqilgan bo'lsa — "🔥 #rank · count" (global) belgisi ko'rinadi.
-#   build_menu <rows> [lokal-stats-fayl] [global-tsv-fayl]
+# OXIRGI ishga tushirilgan agent (STATE_FILE) hammadan tepada "↩" bilan chiqadi —
+# agent yopilib qolganda uni qayta ochish bitta ENTER bo'ladi.
+#   build_menu <rows> [lokal-stats-fayl] [global-tsv-fayl] [oxirgi-agent-nomi]
 build_menu() {
-  local rows="$1" statsfile="${2:-}" globalfile="${3:-}"
+  local rows="$1" statsfile="${2:-}" globalfile="${3:-}" lastname="${4:-}"
   [[ -n "$statsfile" && -r "$statsfile" ]] || statsfile=/dev/null
   [[ -n "$globalfile" && -r "$globalfile" ]] || globalfile=/dev/null
   awk -F'\t' -v sf="$statsfile" -v gf="$globalfile" -v tops=" $TOP_AGENTS " \
+            -v last="$lastname" -v l_last="$(t 'oxirgi')" \
             -v g="${C_GREEN:-}" -v r="${C_RED:-}" -v z="${C_RESET:-}" \
             -v t="${C_TITLE:-}" -v gy="${C_GRAY:-}" -v b="${C_BOLD:-}" -v mg="${C_MAGENTA:-}" '
     function human(x) {
@@ -824,15 +927,18 @@ build_menu() {
       else if (index(auth, "💳")) badge = "💳";
       c = cnt[name] + 0;
       istop = (index(tops, " " binary " ") > 0) ? 1 : 0;
+      islast = (last != "" && name == last) ? 1 : 0;
       use = (c > 0) ? sprintf("  %s·%d×%s", gy, c, z) : "";
       gbadge = (name in grank) ? sprintf("  %s🔥#%d·%s%s", mg, grank[name], human(gcnt[name] + 0), z) : "";
       star = istop ? sprintf("  %s⭐%s", t, z) : "";
-      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s%s%s", icon, b, t, name, z, gy, desc, z, badge, use, gbadge, star)
-      # Tartiblash kalitlari: 1) lokal sanoq (kamayish), 2) top/mashhurlik (kamayish —
-      # yangi foydalanuvchida ham mashhurlar tepada), 3) config indeksi (barqaror).
-      printf "%010d\t%d\t%06d\t%s\t%s\n", c, istop, (++idx), disp, name
+      lastm = islast ? sprintf("  %s↩ %s%s", mg, l_last, z) : "";
+      disp = sprintf("%s  %s%s%-16s%s %s%s%s  %s%s%s%s%s", icon, b, t, name, z, gy, desc, z, badge, use, gbadge, star, lastm)
+      # Tartiblash kalitlari: 1) oxirgi ishlatilgan (eng tepada), 2) lokal sanoq
+      # (kamayish), 3) top/mashhurlik (kamayish — yangi foydalanuvchida ham
+      # mashhurlar tepada), 4) config indeksi (barqaror).
+      printf "%d\t%010d\t%d\t%06d\t%s\t%s\n", islast, c, istop, (++idx), disp, name
     }
-  ' <<<"$rows" | sort -t"$(printf '\t')" -k1,1nr -k2,2nr -k3,3n | cut -f4-
+  ' <<<"$rows" | sort -t"$(printf '\t')" -k1,1nr -k2,2nr -k3,3nr -k4,4n | cut -f5-
 }
 
 # --- fzf orqali tanlash ---------------------------------------------------
@@ -877,8 +983,14 @@ select_with_fzf() {
 
   selection="$(printf '%s\n' "$menu" | fzf "${fzf_args[@]}")" || {
     rc=$?
-    if [[ "$rc" -eq 130 ]]; then log_info "$(t 'Bekor qilindi.')"; exit 0; fi
-    die "$rc" "$(t 'fzf kutilmagan kod bilan to'\''xtadi: %s' "$rc")"
+    case "$rc" in
+      130|1) log_info "$(t 'Bekor qilindi.')"; exit 0 ;;   # ESC/Ctrl-C yoki moslik yo'q
+      *)
+        # fzf'ning O'ZI ishlamadi (eski versiya flag'ni tanimaydi, TTY muammosi...)
+        # — die qilmaymiz: rc=3 bilan qaytamiz, chaqiruvchi (run_menu) ichki
+        # ↑/↓ menyuga o'tadi. Aks holda eski fzf'li userlarda menyu UMUMAN ochilmasdi.
+        return 3 ;;
+    esac
   }
   [[ -z "$selection" ]] && { log_info "$(t 'Hech narsa tanlanmadi.')"; exit 0; }
   # Yashirin NAME maydoni — TAB'dan keyingi qism.
@@ -946,31 +1058,74 @@ select_with_arrows() {
   # Interaktiv TTY shart (chaqiruvchi tekshirgan; bu — himoya uchun ikkilamchi).
   { : >/dev/tty; } 2>/dev/null || return 2  # faqat poyga holatida; trap'ni tripmaslik uchun shartli kontekstda emas — gate run_menu'da
 
-  # Har agent uchun QIDIRUV matni (kichik harf, ANSI'siz) — bir marta tayyorlaymiz.
-  local -a hay=()
-  local i
+  # Datafile (TSV, 9 maydon)ni BIR o'qishda massivlarga olamiz — klavish tsiklida
+  # tashqi jarayon (awk) UMUMAN ochilmaydi. Windows/MSYS'da har fork ~50-150ms:
+  # avvalgi per-keypress awk/subshell'lar bitta strelka bosishini soniyagacha
+  # cho'zib, "menyuda scroll ishlamayapti" shikoyatiga sabab bo'lardi.
+  # TAB → \037 (US) — bo'sh maydonlar "yutilmasligi" uchun (qarang build_rows).
+  local -a r_name=() r_desc=() r_cmd=() r_inst=() r_cat=() r_st=() r_auth=() r_url=()
+  local rn rd rb rc2 ri rcat rst ra ru
+  while IFS=$'\037' read -r rn rd rb rc2 ri rcat rst ra ru; do
+    [[ -n "$rn" ]] || continue
+    r_name+=("$rn"); r_desc+=("$rd"); r_cmd+=("$rc2"); r_inst+=("$ri")
+    r_cat+=("$rcat"); r_st+=("$rst"); r_auth+=("$ra"); r_url+=("$ru")
+  done < <(tr '\t' '\037' <"$datafile")
+
+  # QIDIRUV matnlari (kichik harf) — bitta tr bilan butun faylni kichraytirib
+  # o'qiymiz (bash 3.2 da ${var,,} yo'q). Tartib r_* massivlari bilan bir xil.
+  local -a r_hay=()
+  while IFS=$'\037' read -r rn rd rb rc2 ri rcat rst ra ru; do
+    [[ -n "$rn" ]] || continue
+    r_hay+=("$rn $rd $rb $rcat $ra")
+  done < <(tr '\t' '\037' <"$datafile" | tr '[:upper:]' '[:lower:]')
+
+  # Menyu indeksi → datafile qatori indeksi (nom bo'yicha; sof bash, forksiz).
+  local -a rowof=() hay=()
+  local i j
   for i in "${!names[@]}"; do
-    hay[i]="$(awk -F'\t' -v n="${names[i]}" '$1==n{print tolower($1" "$2" "$3" "$6" "$8); exit}' "$datafile")"
+    rowof[i]=-1
+    for j in "${!r_name[@]}"; do
+      if [[ "${r_name[j]}" == "${names[i]}" ]]; then rowof[i]=$j; break; fi
+    done
+    if (( rowof[i] >= 0 )); then hay[i]="${r_hay[${rowof[i]}]}"; else hay[i]=""; fi
   done
 
   # Ko'rinadigan qatorlar soni — terminal balandligiga moslab cheklaymiz.
   local th; th="$(tput lines 2>/dev/null || echo 24)"; [[ "$th" =~ ^[0-9]+$ ]] || th=24
   local page=$(( total < 10 ? total : 10 ))
   local maxlist=$(( th - 14 )); (( maxlist < 3 )) && maxlist=3
-  (( page > maxlist )) && page=maxlist
-  local DET=6                                    # tafsilot bloki — qat'iy 6 qator (_ad bilan mos)
-  local FH=$(( 2 + page + 1 + 1 + DET + 1 ))     # ramka balandligi (o'zgarmas): header2 + page + count1 + hr1 + DET + footer1
+  (( page > maxlist )) && page=$maxlist
+  # Ramka balandligi o'zgarmas: header2 + page + count1 + hr1 + det6 + footer1.
+  # Alt-screen'da har chizish \033[H dan boshlanadi — balandlikni sanash shart emas,
+  # lekin det[] DOIM 6 qator bo'lishi kerak (aks holda eski qatorlar qoladi).
 
-  # ESC ketma-ketligi uchun timeout: eski bash (3.x) kasr -t qabul qilmaydi.
-  # Windows (MINGW/MSYS/CYGWIN) konsolida ESC'dan keyingi baytlar (`[A` ...) sezilarli
-  # kechikib keladi — 20 ms juda qisqa, strelkalar bo'sh `seq` → "cancel" deb o'qilib
-  # menyu yopilib qolardi. Shu platformalarda oraliqni oshiramiz.
-  local esctmo=0.02; (( ${BASH_VERSINFO[0]:-4} < 4 )) && esctmo=1
+  # ESC ketma-ketligini ajratish uchun timeout — TTY drayveri (termios VTIME) bilan,
+  # DECI-SONIYADA (0.1s birligi). NEGA bash `read -t` EMAS: u select()/poll() ga
+  # tayanadi; Windows (MINGW/MSYS) konsol deskriptorida select ISHONCHSIZ — timeout
+  # darhol "bo'sh" qaytib, har strelka "cancel" deb o'qilib menyu yopilib qolardi.
+  # stty min/time + dd esa kernel read() ni ishlatadi → VTIME haqiqatan kutadi.
+  # Windows konsolida baytlar bo'lak-bo'lak kelgani uchun oraliqni oshiramiz.
+  local escds=1
   case "$(uname -s 2>/dev/null || echo unknown)" in
-    MINGW*|MSYS*|CYGWIN*) esctmo=0.4 ;;
+    MINGW*|MSYS*|CYGWIN*) escds=4 ;;
   esac
 
-  local cur=0 topv=0 query="" first=1
+  # Statik matn/yorliqlarni BIR MARTA hisoblaymiz — har $(t ...) command
+  # substitution ham fork; ularni klavish tsiklida takrorlash Windows'da
+  # menyuni sezilarli sekinlashtirardi.
+  local S_HDR S_PROMPT S_HR S_FOOT S_NOMATCH S_INST S_NOINST
+  local L_CMD L_CAT L_LOGIN L_URL L_INSTL L_UNSET
+  S_HDR="  ${C_BOLD}${C_TITLE}✦ Aidevix CLI${C_RESET}  ${C_GRAY}$(t '↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor')${C_RESET}"
+  S_PROMPT="$(t '  qidirish › ')"
+  S_HR="  ${C_GRAY}$(hr 30)${C_RESET}"
+  S_FOOT="  ${C_GRAY}$(t 'q/ESC = bekor · Enter = tanlash')${C_RESET}"
+  S_NOMATCH="  ${C_GRAY}$(t 'Moslik topilmadi — Backspace bilan qidiruvni tahrirlang.')${C_RESET}"
+  S_INST="${C_GREEN}● $(t "o'rnatilgan")${C_RESET}"
+  S_NOINST="${C_RED}○ $(t "o'rnatilmagan")${C_RESET}"
+  L_CMD="$(t 'Buyruq')";  L_CAT="$(t 'Kategoriya')";     L_LOGIN="$(t 'Login')"
+  L_URL="$(t 'Havola')";  L_INSTL="$(t "O'rnatish:")";   L_UNSET="$(t '(belgilanmagan)')"
+
+  local cur=0 topv=0 query=""
   local -a vis=()
 
   # _af — joriy filtrga mos indekslar ro'yxatini (vis) quradi.
@@ -985,35 +1140,38 @@ select_with_arrows() {
     (( cur < 0 )) && cur=0
   }
 
-  # _ad <nom> — tanlangan agentning qat'iy DET-qatorli tafsilotini det[] ga yozadi.
+  # _ad <menyu-indeksi> — tanlangan agentning qat'iy DET-qatorli tafsilotini
+  # det[] ga yozadi. Sof bash (oldindan o'qilgan r_* massivlaridan) — har
+  # siljishda awk/subshell ochilmaydi (Windows'da scroll sekinligining sababi edi).
   local -a det=()
   _ad() {
-    det=(); local n2="${1:-}" d2 b2 c2 ins cat st a u badge
-    if [[ -n "$n2" ]]; then
-      IFS=$'\037' read -r d2 b2 c2 ins cat st a u < <(
-        awk -F'\t' -v n="$n2" '$1==n{print $2"\037"$3"\037"$4"\037"$5"\037"$6"\037"$7"\037"$8"\037"$9; exit}' "$datafile")
+    det=(); local mi="${1:--1}" dj=-1 n2="" d2="" c2="" ins="" cat="" st="" a="" u="" badge
+    if [[ "$mi" =~ ^[0-9]+$ ]]; then dj="${rowof[mi]:--1}"; fi
+    if (( dj >= 0 )); then
+      n2="${r_name[dj]}"; d2="${r_desc[dj]}"; c2="${r_cmd[dj]}"; ins="${r_inst[dj]}"
+      cat="${r_cat[dj]}"; st="${r_st[dj]}"; a="${r_auth[dj]}"; u="${r_url[dj]}"
     fi
-    if [[ "$st" == *✓* ]]; then badge="${C_GREEN}● $(t "o'rnatilgan")${C_RESET}"
-    else                        badge="${C_RED}○ $(t "o'rnatilmagan")${C_RESET}"; fi
-    [[ -z "$a" ]] && a="—"; [[ -z "$u" ]] && u="—"; [[ -z "$ins" ]] && ins="$(t '(belgilanmagan)')"
+    if [[ "$st" == *✓* ]]; then badge="$S_INST"; else badge="$S_NOINST"; fi
+    [[ -z "$a" ]] && a="—"; [[ -z "$u" ]] && u="—"; [[ -z "$ins" ]] && ins="$L_UNSET"
     det+=("  ${C_BOLD}${C_TITLE}${n2}${C_RESET}   ${badge}")
-    det+=("  ${C_GRAY}$(t 'Buyruq')${C_RESET}     ${C_MAGENTA}${c2}${C_RESET}")
-    det+=("  ${C_GRAY}$(t 'Kategoriya')${C_RESET} ${cat}    ${C_GRAY}$(t 'Login')${C_RESET} ${a}")
-    det+=("  ${C_GRAY}$(t 'Havola')${C_RESET}     ${C_CYAN}${u}${C_RESET}")
-    det+=("  ${C_GRAY}$(t "O'rnatish:")${C_RESET} ${ins}")
+    det+=("  ${C_GRAY}${L_CMD}${C_RESET}     ${C_MAGENTA}${c2}${C_RESET}")
+    det+=("  ${C_GRAY}${L_CAT}${C_RESET} ${cat}    ${C_GRAY}${L_LOGIN}${C_RESET} ${a}")
+    det+=("  ${C_GRAY}${L_URL}${C_RESET}     ${C_CYAN}${u}${C_RESET}")
+    det+=("  ${C_GRAY}${L_INSTL}${C_RESET} ${ins}")
     det+=("  ${C_GRAY}${d2}${C_RESET}")
   }
 
-  # _ar — butun ramkani (qat'iy FH qator) chizadi.
+  # _ar — butun ramkani (qat'iy FH qator) chizadi. Sof bash: forksiz (statik
+  # matnlar oldindan tayyor). Alt-screen'da har safar tepadan (\033[H) chiziladi.
   _ar() {
     local nvis=${#vis[@]}
     (( cur < topv )) && topv=$cur
     (( cur >= topv + page )) && topv=$(( cur - page + 1 ))
     (( topv < 0 )) && topv=0
     local -a out=()
-    out+=("  ${C_BOLD}${C_TITLE}✦ Aidevix CLI${C_RESET}  ${C_GRAY}$(t '↑/↓ tanlang · yozib qidiring · ENTER ishga tushirish · ESC bekor')${C_RESET}")
-    if [[ -n "$query" ]]; then out+=("  ${C_MAGENTA}$(t '  qidirish › ')${C_RESET}${query}")
-    else                       out+=("  ${C_GRAY}$(t '  qidirish › ')${C_RESET}"); fi
+    out+=("$S_HDR")
+    if [[ -n "$query" ]]; then out+=("  ${C_MAGENTA}${S_PROMPT}${C_RESET}${query}")
+    else                       out+=("  ${C_GRAY}${S_PROMPT}${C_RESET}"); fi
     local r vi oi
     for (( r=0; r<page; r++ )); do
       vi=$(( topv + r ))
@@ -1025,20 +1183,19 @@ select_with_arrows() {
         out+=("")
       fi
     done
-    if (( nvis > 0 )); then out+=("  ${C_GRAY}$(printf '%d/%d' $((cur+1)) "$nvis")${C_RESET}")
-    else                    out+=("  ${C_GRAY}$(printf '0/%d' "$total")${C_RESET}"); fi
-    out+=("  ${C_GRAY}$(hr 30)${C_RESET}")
+    if (( nvis > 0 )); then out+=("  ${C_GRAY}$((cur+1))/${nvis}${C_RESET}")
+    else                    out+=("  ${C_GRAY}0/${total}${C_RESET}"); fi
+    out+=("$S_HR")
     if (( nvis > 0 )); then
-      _ad "${names[${vis[cur]}]}"
+      _ad "${vis[cur]}"
     else
-      det=("  ${C_GRAY}$(t 'Moslik topilmadi — Backspace bilan qidiruvni tahrirlang.')${C_RESET}" "" "" "" "" "")
+      det=("$S_NOMATCH" "" "" "" "" "")
     fi
     local dl
     for dl in "${det[@]}"; do out+=("$dl"); done
-    out+=("  ${C_GRAY}$(t 'q/ESC = bekor · Enter = tanlash')${C_RESET}")
+    out+=("$S_FOOT")
 
-    # Birinchi marta to'liq chizamiz; keyin ramka boshiga qaytib qayta yozamiz.
-    if (( first )); then first=0; else printf '\033[%dA' "$FH" >/dev/tty; fi
+    printf '\033[H' >/dev/tty
     local L
     for L in "${out[@]}"; do printf '\r\033[K%s\n' "$L" >/dev/tty; done
   }
@@ -1051,28 +1208,56 @@ select_with_arrows() {
   set +e
   trap - ERR
 
-  # Kursorni yashir + avto-o'rashni o'chir (uzun satr ramka balandligini buzmasin).
-  printf '\033[?25l\033[?7l' >/dev/tty
+  # TTY'ni RAW-rejimga o'tkazamiz va eski holatni saqlaymiz: -echo (yozilgan ko'rinmasin),
+  # -icanon (qatorlab emas, bayt-bayt), -icrnl (Enter \r bo'lib qolsin, \n ga aylanmasin).
+  # Har qanday chiqishda (EXIT — bekor `exit 0` ham) tiklaymiz. Endi baytlarni bash
+  # `read -n -t` o'rniga kernel termios (VMIN/VTIME) orqali o'qiymiz — Windows konsolida
+  # `read -t` ishonchsiz, bu esa har joyda (Linux/mac/MSYS) bir xil ishonchli ishlaydi.
+  local _savedstty=""
+  _savedstty="$(stty -g </dev/tty 2>/dev/null || true)"
+  trap 'stty "$_savedstty" </dev/tty 2>/dev/null || true; printf "\033[?1007l\033[?25h\033[?7h\033[?1049l" >/dev/tty 2>/dev/null || true' EXIT
+  stty -echo -icanon -icrnl min 1 time 0 </dev/tty 2>/dev/null || true
+
+  # _rb <o'zgaruvchi> [deci-soniya] — TTY'dan BITTA bayt o'qiydi. Deci-soniya berilsa
+  # min0/time bilan o'sha vaqtgacha kutadi (bayt kelmasa → bo'sh); berilmasa bloklab
+  # kutadi. `dd` kernel read() ni chaqiradi → VMIN/VTIME hurmat qilinadi.
+  _rb() {
+    if [[ -n "${2:-}" ]]; then
+      stty min 0 time "$2" </dev/tty 2>/dev/null || true
+      printf -v "$1" '%s' "$(dd bs=1 count=1 2>/dev/null </dev/tty)"
+      stty min 1 time 0 </dev/tty 2>/dev/null || true   # bloklash rejimiga qaytamiz
+    else
+      printf -v "$1" '%s' "$(dd bs=1 count=1 2>/dev/null </dev/tty)"
+    fi
+  }
+
+  # ALT-SCREEN'ga o'tamiz (\033[?1049h): menyu alohida ekranda chiziladi —
+  # sichqoncha g'ildiragi terminal scrollback'ini siljitib ramkani buzmaydi.
+  # \033[?1007h — "alternate scroll": g'ildirak aylanishi alt-screen'da ↑/↓
+  # strelka baytlari bo'lib keladi (Windows Terminal/mintty/xterm) → g'ildirak
+  # bilan scroll ISHLAYDI. Kursor yashirin, avto-o'rash o'chiq.
+  printf '\033[?1049h\033[H\033[?1007h\033[?25l\033[?7l' >/dev/tty
   _af
 
-  local key action selected="" cancelled=0 _t c1 c2
+  local key action selected="" cancelled=0 _t c1 c2 _n
   while :; do
     _ar
-    IFS= read -rsn1 key </dev/tty || { cancelled=1; break; }
+    # Birinchi baytni bash'ning BLOKLOVCHI read'i bilan o'qiymiz — builtin,
+    # forksiz (Windows'da har fork qimmat). Ishonchsizlik faqat `-t` (timeout)
+    # rejimida edi; timeout'li o'qishlar uchun _rb (stty VTIME + dd) qoladi.
+    key=""; IFS= read -rsn1 key </dev/tty || key=""
     action="char"
     if [[ "$key" == $'\033' ]]; then
       # ESC keldi: bu YOLG'IZ ESC (bekor) yoki strelka/funksional klavishaning
-      # boshlanishi (`\033[A` ...) bo'lishi mumkin. Qolgan baytlarni BAYTMA-BAYT,
-      # har biriga ALOHIDA timeout bilan o'qiymiz. Avval `read -rsn2` bir
-      # timeout oynasida IKKALA baytni kutardi; Windows (MINGW/MSYS) konsolida
-      # baytlar kechikib/bo'lak-bo'lak kelgani uchun read timeout bo'lib qisman
-      # natijani TASHLAB yuborardi → har strelka "bekor" deb o'qilib menyu
-      # yopilib qolardi. Baytma-bayt o'qish bu poygani yo'qotadi.
-      c1=""; IFS= read -rsn1 -t "$esctmo" c1 </dev/tty || true
+      # boshlanishi (`\033[A` ...) bo'lishi mumkin. Qolgan baytlarni VTIME timeout
+      # bilan o'qiymiz: bayt bo'lsa darhol keladi, bo'lmasa escds deci-soniyada
+      # timeout → bo'sh → haqiqiy yolg'iz ESC. (bash `read -t` Windows konsolida
+      # tezda bo'sh qaytib har strelkani "bekor" deb o'qirdi — endi termios kutadi.)
+      c1=""; _rb c1 "$escds"
       if [[ -z "$c1" ]]; then
         action=cancel                       # haqiqiy yolg'iz ESC
       elif [[ "$c1" == '[' || "$c1" == 'O' ]]; then
-        c2=""; IFS= read -rsn1 -t "$esctmo" c2 </dev/tty || true
+        c2=""; _rb c2 "$escds"
         case "$c2" in
           A) action=up ;;
           B) action=down ;;
@@ -1080,14 +1265,25 @@ select_with_arrows() {
           D) action=left ;;
           H) action=home ;;
           F) action=end ;;
-          5) IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgup ;;
-          6) IFS= read -rsn1 -t "$esctmo" _t </dev/tty || true; action=pgdn ;;
-          *) action=cancel ;;
+          5) _rb _t "$escds"; action=pgup ;;
+          6) _rb _t "$escds"; action=pgdn ;;
+          *)
+            # Boshqa CSI ketma-ketliklar (Delete \033[3~, F-klavishlar,
+            # Ctrl+strelka \033[1;5A, sichqoncha hodisalari...) — menyuni
+            # YOPMAYMIZ: yakuniy baytgacha (@..~ oralig'i) o'qib tashlab,
+            # e'tiborsiz qoldiramiz. Avval bular "cancel" deb o'qilib,
+            # scroll paytida menyu to'satdan yopilib qolardi.
+            action=skip
+            _n=0
+            while [[ -n "$c2" && ! "$c2" =~ [@A-Za-z~] ]] && (( _n < 16 )); do
+              c2=""; _rb c2 "$escds"; _n=$(( _n + 1 ))
+            done ;;
         esac
       else
-        action=cancel
+        action=skip                          # Alt+harf kabi — e'tiborsiz qoldiramiz
       fi
-    elif [[ -z "$key" ]]; then action=enter
+    elif [[ -z "$key" ]]; then action=cancel       # EOF (terminal yopildi)
+    elif [[ "$key" == $'\r' || "$key" == $'\n' ]]; then action=enter
     elif [[ "$key" == $'\177' || "$key" == $'\b' ]]; then action=bs
     elif [[ "$key" == $'\t' ]]; then action=down
     fi
@@ -1101,6 +1297,7 @@ select_with_arrows() {
       end)   cur=$(( ${#vis[@]} - 1 )); (( cur < 0 )) && cur=0 ;;
       enter) (( ${#vis[@]} > 0 )) && { selected="${names[${vis[cur]}]}"; break; } ;;
       bs)    [[ -n "$query" ]] && { query="${query%?}"; _af; } ;;
+      skip)  : ;;                                    # notanish klavisha — e'tiborsiz
       cancel) cancelled=1; break ;;
       char)
         case "$key" in
@@ -1110,10 +1307,10 @@ select_with_arrows() {
     esac
   done
 
-  # Ramkani tozalab, kursor/o'rashni tiklaymiz (kursor ramka boshida qoladi).
-  printf '\033[%dA' "$FH" >/dev/tty
-  local cl; for (( cl=0; cl<FH; cl++ )); do printf '\r\033[K\n' >/dev/tty; done
-  printf '\033[%dA\033[?25h\033[?7h' "$FH" >/dev/tty
+  # ALT-SCREEN'dan chiqamiz — asosiy ekran (banner va h.k.) o'z holicha qaytadi,
+  # menyu izsiz yo'qoladi. TTY rejimi va kursor/o'rash tiklanadi.
+  stty "$_savedstty" </dev/tty 2>/dev/null || true
+  printf '\033[?1007l\033[?25h\033[?7h\033[?1049l' >/dev/tty
 
   if (( cancelled )); then
     log_info "$(t 'Bekor qilindi.')"
@@ -1167,14 +1364,28 @@ run_menu() {
   fi
 
   ui_spin_start "$(t 'Menyu tayyorlanmoqda…')"
-  local menu; menu="$(build_menu "$rows" "$STATS_FILE" "$globalfile")"
+  # Oxirgi ishlatilgan agent menyuda eng tepada turadi (bir ENTER bilan qayta ochish).
+  local lastname; lastname="$(read_last)"
+  local menu; menu="$(build_menu "$rows" "$STATS_FILE" "$globalfile" "$lastname")"
   ui_spin_stop
 
-  local name datafile
+  local name="" datafile rc=0
   datafile="$(mktemp)"; TMPFILES+=("$datafile")
   printf '%s\n' "$rows" >"$datafile"
   if command -v fzf >/dev/null 2>&1; then
-    name="$(select_with_fzf "$menu" "$datafile")"
+    name="$(select_with_fzf "$menu" "$datafile")" || rc=$?
+    if [[ "$rc" -eq 3 ]]; then
+      # fzf ishga tushmadi (eski versiya / TTY muammosi) — ichki menyuga o'tamiz.
+      log_warn "$(t "fzf ishga tushmadi — ichki menyu ishlatilmoqda.")"
+      rc=0
+      if { : >/dev/tty; } 2>/dev/null; then
+        name="$(select_with_arrows "$menu" "$datafile")"
+      else
+        name="$(select_with_numbers "$menu")"
+      fi
+    elif [[ "$rc" -ne 0 ]]; then
+      exit "$rc"
+    fi
   elif { : >/dev/tty; } 2>/dev/null; then
     # fzf yo'q, lekin TTY bor — ichki ↑/↓ menyu (to'liq ma'lumotli).
     name="$(select_with_arrows "$menu" "$datafile")"
@@ -1214,9 +1425,12 @@ maybe_autoupdate_agent() {
   [[ -n "${AIDEVIX_NO_AUTOUPDATE:-}" || -n "${CI:-}" ]] && return 0
   [[ -n "$install" ]] || return 0
   command -v "$binary" >/dev/null 2>&1 || return 0   # o'rnatilmagan — ensure_installed hal qiladi
-  # Qayta ishga tushirilganda haqiqatan "latest"ga olib keladiganlar:
+  # Qayta ishga tushirilganda haqiqatan "latest"ga olib keladiganlar. curl/wget
+  # skriptlari ATAYLAB chiqarilgan: ular har safar BUTUN installer'ni qayta
+  # yuklab-o'rnatardi — sekin internetda ishga tushish oldidan uzoq kutish,
+  # userga esa "yana o'rnatyapti" bo'lib ko'rinardi.
   case "$install" in
-    *@latest*|*--upgrade*|*curl\ *|*wget\ *) : ;;
+    *@latest*|*--upgrade*) : ;;
     *) return 0 ;;
   esac
 
@@ -1233,6 +1447,7 @@ maybe_autoupdate_agent() {
   # qayta-qayta urinmaymiz (oraliq tugaguncha).
   touch_agent_update_stamp "$name"
 
+  install="$(resolve_install_cmd "$install")"
   trap - ERR
   spin_run "$(t "🔄 '%s' eng so'nggi versiyaga yangilanmoqda" "$name")" "$install" || true
   rm -f "${SPIN_LOG:-}" 2>/dev/null || true
@@ -1290,12 +1505,18 @@ ensure_installed() {
   local name="$1" binary="$2" install="$3"
 
   command -v "$binary" >/dev/null 2>&1 && return 0
+  # PATH'da yo'q — lekin OLDIN o'rnatilgan bo'lishi mumkin (o'rnatuvchi PATH'ni
+  # faqat rc faylga yozgan). Ma'lum joylardan qidiramiz; topilsa qayta o'rnatish
+  # SO'RALMAYDI — papka PATH'ga qo'shilib keshlanadi.
+  if locate_binary "$binary"; then return 0; fi
 
   log_warn "$(t "Agent topilmadi: '%s' (kerakli buyruq: '%s')." "$name" "$binary")"
   if [[ -z "$install" ]]; then
     die 127 "$(t "Avtomatik o'rnatish buyrug'i belgilanmagan. Iltimos, '%s'ni qo'lda o'rnating." "$name")"
   fi
 
+  # Buyruqni muhitga moslaymiz (masalan Windows'da python3 stub → python).
+  install="$(resolve_install_cmd "$install")"
   log_info "$(t "O'rnatish buyrug'i: %s" "$install")"
   local ans="" prompt; prompt="$(t "❓ '%s' hozir o'rnatilsinmi? [y/N] " "$name")"
   # Javobni avval /dev/tty'dan o'qishga urinamiz (fzf stdin'ni band qilgan
@@ -1316,9 +1537,18 @@ ensure_installed() {
   fi
 
   # O'rnatishdan OLDIN: kerakli dastur (npm/python3/curl...) bormi? Yo'q bo'lsa
-  # foydalanuvchiga nima yetishmayotganini SODDA tilda aytamiz.
-  local tool; tool="$(detect_install_tool "$install")"
-  if [[ -n "$tool" ]] && ! command -v "$tool" >/dev/null 2>&1; then
+  # foydalanuvchiga nima yetishmayotganini SODDA tilda aytamiz. python/python3
+  # uchun BORLIGI yetmaydi — Windows Store stub'i emasligini ham tekshiramiz
+  # (stub `-c` buyrug'ini bajara olmaydi).
+  local tool tool_missing=0; tool="$(detect_install_tool "$install")"
+  if [[ -n "$tool" ]]; then
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      tool_missing=1
+    elif [[ "$tool" == python* ]] && ! "$tool" -c 'import sys' >/dev/null 2>&1; then
+      tool_missing=1
+    fi
+  fi
+  if [[ "$tool_missing" -eq 1 ]]; then
     panel "$(t "❌ '%s' o'rnatilmadi — avval bitta dastur kerak" "$name")" \
       "$(t "'%s'ni o'rnatish uchun kompyuteringizda \"%s\" bo'lishi shart," "$name" "$tool")" \
       "$(t 'lekin u topilmadi.')" \
@@ -1409,6 +1639,14 @@ ensure_installed() {
   # boyitamiz va hash'ni tozalaymiz, shunda binar joriy sessiyada ko'rinadi.
   augment_tool_path
 
+  # Hali ham ko'rinmasa — o'rnatuvchi binarni O'Z papkasiga qo'ygan bo'lishi
+  # mumkin; ma'lum joylardan qidirib, topilsa PATH'ga qo'shamiz va keshlaymiz
+  # (o'rnatish MUVAFFAQIYATLI bo'lgan holda "terminalni qayta oching" deb
+  # to'xtash — userga qayta-o'rnatish aylanasi bo'lib tuyulardi).
+  if ! command -v "$binary" >/dev/null 2>&1; then
+    locate_binary "$binary" || true
+  fi
+
   if ! command -v "$binary" >/dev/null 2>&1; then
     panel "$(t "⚠️  '%s' o'rnatildi, lekin hali ishga tushmadi" "$name")" \
       "$(t 'Dastur o'\''rnatildi, biroq tizim "%s" buyrug'\''ini hali topa olmayapti.' "$binary")" \
@@ -1451,6 +1689,7 @@ update_agents() {
       log_warn "$(t "%s: o'rnatish buyrug'i yo'q — o'tkazib yuborildi." "$name")"
       continue
     fi
+    install="$(resolve_install_cmd "$install")"
     trap - ERR
     if spin_run "$(t '🔄 %s yangilanmoqda' "$name")" "$install"; then
       ok=$((ok + 1))
