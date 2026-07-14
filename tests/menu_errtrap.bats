@@ -80,11 +80,15 @@ _arrows_body() {
 # yopilib qolardi (baytma-bayt `read -rsn1 -t` ham shu sababdan yetarli bo'lmadi).
 # Fix: bash `read` o'rniga stty min/time (VTIME) + dd — kernel read() VTIME'ni
 # haqiqatan kutadi, har joyda (Linux/mac/MSYS) ishonchli ishlaydi.
-@test "select_with_arrows: kalit o'qishda fragile bash 'read -t' ishlatmaydi" {
+@test "select_with_arrows: asosiy o'qish bloklovchi, 'read -t' faqat _rb zaxirasi" {
+  local body; body="$(_arrows_body)"
+  # Tsikldagi BIRINCHI bayt bloklovchi builtin read bilan o'qiladi (-t'siz).
+  printf '%s\n' "$body" | grep -vE '^\s*#' | grep -q 'IFS= read -rsn1 key </dev/tty'
+  # `read -t` faqat _rb ichidagi VTIME-yolg'on zaxirasida — bittadan oshmasin
+  # (unga TAYANILMAYDI: VTIME asosiy, read -t esa 2-qatlam).
   local n
-  # Izoh qatorlarini (#...) chiqarib tashlab, faqat KOD'da qidiramiz.
-  n="$(_arrows_body | grep -vE '^\s*#' | grep -cE 'read -rsn?[0-9]* -t' || true)"
-  [ "$n" -eq 0 ]
+  n="$(printf '%s\n' "$body" | grep -vE '^\s*#' | grep -cE 'read -rsn?[0-9]* -t' || true)"
+  [ "$n" -le 1 ]
 }
 
 @test "select_with_arrows: baytlarni stty min/time + dd (termios) bilan o'qiydi" {
@@ -97,11 +101,25 @@ _arrows_body() {
   printf '%s\n' "$body" | grep -qE 'stty .* min 1 time 0|stty min 1 time 0'
 }
 
-@test "select_with_arrows: ESC tarmog'ida kamida ikki marta VTIME o'qish (c1,c2)" {
-  # ESC'dan keyin c1 va c2 baytlari escds (deci-soniya) timeout bilan o'qiladi.
-  local n
-  n="$(_arrows_body | grep -cE '_rb [a-z0-9_]+ "\$escds"')"
+@test "select_with_arrows: ESC tarmog'ida kamida ikki marta seq-o'qish (c1,c2)" {
+  # ESC'dan keyin c1 va c2 baytlari _rq (VTIME yoki bloklovchi) bilan o'qiladi;
+  # _rq esa timeout ishlaydigan muhitda _rb'ni escds bilan chaqiradi.
+  local body n
+  body="$(_arrows_body)"
+  n="$(printf '%s\n' "$body" | grep -vE '^\s*#' | grep -cE '_rq [a-z0-9_]+')"
   [ "$n" -ge 2 ]
+  printf '%s\n' "$body" | grep -qE '_rb "\$1" "\$escds"'
+}
+
+@test "select_with_arrows: timeout'lar o'lik muhitda bloklovchi rejimga o'tadi" {
+  # Ba'zi Windows konsol tty'larida VTIME ham, select ham kutmasdan bo'sh
+  # qaytadi — strelkalar "yolg'iz ESC = bekor" deb o'qilib menyu yopilardi.
+  # TIMERS_BROKEN aniqlanishi va bloklovchi qayta o'qish mavjudligini tekshiramiz.
+  local body; body="$(_arrows_body)"
+  printf '%s\n' "$body" | grep -q 'TIMERS_BROKEN=1'      # aniqlash (o'lchov)
+  printf '%s\n' "$body" | grep -q 'TIMERS_BROKEN=0'      # boshlang'ich holat
+  # Aniqlangach c1 bloklab qayta o'qiladi (ESC-ESC → bekor yo'li ham bor).
+  printf '%s\n' "$body" | grep -qE '^\s*_rb c1$'
 }
 
 @test "select_with_arrows: chiqishda TTY holatini tiklaydi (stty restore + EXIT trap)" {

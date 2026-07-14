@@ -1221,14 +1221,40 @@ select_with_arrows() {
   # _rb <o'zgaruvchi> [deci-soniya] — TTY'dan BITTA bayt o'qiydi. Deci-soniya berilsa
   # min0/time bilan o'sha vaqtgacha kutadi (bayt kelmasa → bo'sh); berilmasa bloklab
   # kutadi. `dd` kernel read() ni chaqiradi → VMIN/VTIME hurmat qilinadi.
+  #
+  # UCH QATLAMLI himoya (Windows konsol tty'lari har xil buzuq bo'ladi):
+  #   1) stty VTIME + dd — kernel timeout (asosiy yo'l);
+  #   2) u DARHOL bo'sh qaytsa (VTIME yolg'on) → bash `read -t 1` (select) zaxirasi;
+  #   3) u ham darhol bo'sh qaytsa → TIMERS_BROKEN=1: bu muhitda hech qanday
+  #      timeout ishlamaydi — ESC-ketma-ketliklar bloklab o'qiladi (_rq).
+  # "Darhol"ligini EPOCHREALTIME (bash 5+, Git Bash'da bor) bilan o'lchaymiz;
+  # bo'lmasa (mac bash 3.2 — u yerda VTIME ishlaydi) hech narsa o'zgarmaydi.
   _rb() {
     if [[ -n "${2:-}" ]]; then
+      local _v="" _t0=""
+      [[ -n "${EPOCHREALTIME:-}" ]] && _t0="${EPOCHREALTIME/./}"
       stty min 0 time "$2" </dev/tty 2>/dev/null || true
-      printf -v "$1" '%s' "$(dd bs=1 count=1 2>/dev/null </dev/tty)"
+      _v="$(dd bs=1 count=1 2>/dev/null </dev/tty)"
       stty min 1 time 0 </dev/tty 2>/dev/null || true   # bloklash rejimiga qaytamiz
+      if [[ -z "$_v" && -n "$_t0" ]] && (( ${EPOCHREALTIME/./} - _t0 < $2 * 50000 )); then
+        # So'ralgan kutishning yarmiga ham yetmasdan bo'sh qaytdi → VTIME yolg'on.
+        IFS= read -rsn1 -t 1 _v </dev/tty 2>/dev/null || _v=""
+        if [[ -z "$_v" ]] && (( ${EPOCHREALTIME/./} - _t0 < 500000 )); then
+          TIMERS_BROKEN=1                    # select ham kutmadi — timeout'lar o'lik
+        fi
+      fi
+      printf -v "$1" '%s' "$_v"
     else
       printf -v "$1" '%s' "$(dd bs=1 count=1 2>/dev/null </dev/tty)"
     fi
+  }
+
+  # _rq <o'zgaruvchi> — ESC-ketma-ketlik baytini o'qiydi: timeout ishlaydigan
+  # muhitda VTIME bilan; TIMERS_BROKEN bo'lsa BLOKLAB — strelka/funksional
+  # klavisha baytlari klavisha bilan BIRGA kelgani uchun bloklovchi o'qish ularni
+  # darhol oladi (shu tufayli strelka hech qachon "bekor" deb o'qilmaydi).
+  _rq() {
+    if [[ "${TIMERS_BROKEN:-0}" -eq 1 ]]; then _rb "$1"; else _rb "$1" "$escds"; fi
   }
 
   # ALT-SCREEN'ga o'tamiz (\033[?1049h): menyu alohida ekranda chiziladi —
@@ -1239,7 +1265,7 @@ select_with_arrows() {
   printf '\033[?1049h\033[H\033[?1007h\033[?25l\033[?7l' >/dev/tty
   _af
 
-  local key action selected="" cancelled=0 _t c1 c2 _n
+  local key action selected="" cancelled=0 _t c1 c2 _n TIMERS_BROKEN=0
   while :; do
     _ar
     # Birinchi baytni bash'ning BLOKLOVCHI read'i bilan o'qiymiz — builtin,
@@ -1253,11 +1279,19 @@ select_with_arrows() {
       # bilan o'qiymiz: bayt bo'lsa darhol keladi, bo'lmasa escds deci-soniyada
       # timeout → bo'sh → haqiqiy yolg'iz ESC. (bash `read -t` Windows konsolida
       # tezda bo'sh qaytib har strelkani "bekor" deb o'qirdi — endi termios kutadi.)
-      c1=""; _rb c1 "$escds"
+      c1=""; _rq c1
+      if [[ -z "$c1" && "${TIMERS_BROKEN:-0}" -eq 1 ]]; then
+        # HOZIRGINA aniqlandi: bu muhitda timeout'lar umuman ishlamaydi (ba'zi
+        # Windows konsol tty'lari). Baytni BLOKLAB qayta o'qiymiz — strelka
+        # bosilgan bo'lsa uning `[A` baytlari allaqachon bufferda, darhol keladi.
+        # Yolg'iz ESC bo'lsa keyingi klavishagacha kutiladi: ikkinchi ESC — bekor.
+        _rb c1
+        [[ "$c1" == $'\033' ]] && c1=""      # ESC-ESC → yolg'iz ESC (bekor) yo'liga
+      fi
       if [[ -z "$c1" ]]; then
         action=cancel                       # haqiqiy yolg'iz ESC
       elif [[ "$c1" == '[' || "$c1" == 'O' ]]; then
-        c2=""; _rb c2 "$escds"
+        c2=""; _rq c2
         case "$c2" in
           A) action=up ;;
           B) action=down ;;
@@ -1265,8 +1299,8 @@ select_with_arrows() {
           D) action=left ;;
           H) action=home ;;
           F) action=end ;;
-          5) _rb _t "$escds"; action=pgup ;;
-          6) _rb _t "$escds"; action=pgdn ;;
+          5) _rq _t; action=pgup ;;
+          6) _rq _t; action=pgdn ;;
           *)
             # Boshqa CSI ketma-ketliklar (Delete \033[3~, F-klavishlar,
             # Ctrl+strelka \033[1;5A, sichqoncha hodisalari...) — menyuni
@@ -1276,7 +1310,7 @@ select_with_arrows() {
             action=skip
             _n=0
             while [[ -n "$c2" && ! "$c2" =~ [@A-Za-z~] ]] && (( _n < 16 )); do
-              c2=""; _rb c2 "$escds"; _n=$(( _n + 1 ))
+              c2=""; _rq c2; _n=$(( _n + 1 ))
             done ;;
         esac
       else
